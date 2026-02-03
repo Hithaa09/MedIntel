@@ -1,0 +1,37 @@
+# ── Python ──────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+
+# ── Virtual environments (never commit these) ────────────────
+env/
+venv/
+.venv/
+ENV/
+
+# ── Environment / secrets ────────────────────────────────────
+.env
+
+# ── ML model binaries (large — regenerate with: python -m ml.train) ──
+ml/models/*.joblib
+
+# ── Generated data files (regenerate with: python -m etl.pipeline) ───
+data/healthcare_raw_1000x15.csv
+
+# ── Large source CSVs (download separately — see README) ─────
+data/Train_*.csv
+
+# ── Oracle SQL Developer workspace files ─────────────────────
+*.sdimp
+*.jws
+*.jpr
+
+# ── macOS ────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+
+# ── Editors ──────────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.swp
+*.swo

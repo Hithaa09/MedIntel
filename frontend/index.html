@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>MedIntel — Healthcare Claims Analytics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+
+<style>
+/* ────────────────────────────────────────────────────────────
+   DESIGN TOKENS
+──────────────────────────────────────────────────────────── */
+:root{
+  /* Sidebar — always dark */
+  --sb:#0d1117;
+  --sb-border:rgba(255,255,255,.06);
+  --sb-text:rgba(255,255,255,.55);
+  --sb-text-hover:rgba(255,255,255,.9);
+  --sb-active-bg:rgba(233,30,99,.15);
+  --sb-active:hsl(340,100%,72%);
+  --sb-section:rgba(255,255,255,.22);
+
+  /* Brand — hot pink */
+  --pk:#e91e63;
+  --pk-h:#c2185b;
+  --pk-light:#fce4ec;
+  --pk-tint:rgba(233,30,99,.1);
+
+  /* Main — always light */
+  --bg:#f0f2f5;
+  --card:#fff;
+  --card-hover:#fafbfc;
+  --border:#e5e7eb;
+  --border-2:#d1d5db;
+
+  /* Text */
+  --t9:#111827;
+  --t6:#4b5563;
+  --t4:#9ca3af;
+
+  /* Status */
+  --paid:#22c55e;
+  --paid-bg:rgba(34,197,94,.1);
+  --proc:#3b82f6;
+  --proc-bg:rgba(59,130,246,.1);
+  --pend:#f59e0b;
+  --pend-bg:rgba(245,158,11,.1);
+  --deny:#ef4444;
+  --deny-bg:rgba(239,68,68,.1);
+
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,.08);
+  --radius:10px;
+  --radius-lg:14px;
+}
+
+/* ── Reset ── */
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t9);-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
+button{font-family:inherit;cursor:pointer;border:none;outline:none}
+input,select{font-family:inherit;outline:none}
+
+/* ── Layout ── */
+#sidebar{
+  position:fixed;left:0;top:0;bottom:0;width:240px;
+  background:var(--sb);border-right:1px solid var(--sb-border);
+  z-index:60;display:flex;flex-direction:column;overflow:hidden;
+  transition:width .25s ease;
+}
+#sidebar.col{width:64px}
+#main{margin-left:240px;min-height:100vh;transition:margin-left .25s ease}
+#main.col{margin-left:64px}
+
+/* ── Sidebar brand ── */
+.sb-brand{
+  display:flex;align-items:center;gap:10px;
+  padding:18px 16px;border-bottom:1px solid var(--sb-border);min-height:65px;
+}
+.sb-logo{
+  width:34px;height:34px;background:var(--pk);border-radius:9px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.sb-name{font-size:.9rem;font-weight:700;color:#fff;white-space:nowrap;transition:opacity .2s}
+.sb-sub{font-size:.62rem;color:rgba(255,255,255,.35);white-space:nowrap;margin-top:1px;transition:opacity .2s}
+#sidebar.col .sb-name,#sidebar.col .sb-sub,#sidebar.col .nav-label,#sidebar.col .sb-section{opacity:0;width:0;overflow:hidden}
+#sidebar.col .sb-user-info{opacity:0;width:0;overflow:hidden}
+
+/* ── Nav ── */
+.sb-section{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--sb-section);padding:14px 22px 4px;white-space:nowrap;transition:opacity .2s}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:9px 14px;margin:1px 8px;
+  border-radius:8px;color:var(--sb-text);font-size:.875rem;font-weight:500;
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.nav-item:hover{background:rgba(255,255,255,.07);color:var(--sb-text-hover)}
+.nav-item.active{background:var(--sb-active-bg);color:var(--sb-active)}
+.nav-item.active .nav-icon{color:var(--pk)}
+.nav-icon{width:18px;height:18px;flex-shrink:0;transition:color .15s}
+.nav-label{transition:opacity .2s,width .2s}
+.nav-disabled{opacity:.4;pointer-events:none}
+
+/* ── Sidebar user ── */
+.sb-user{border-top:1px solid var(--sb-border);padding:14px 16px;display:flex;align-items:center;gap:10px}
+.sb-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--pk),#7c3aed);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#fff;flex-shrink:0}
+.sb-user-info{overflow:hidden}
+.sb-uname{font-size:.83rem;font-weight:600;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-urole{font-size:.7rem;color:rgba(255,255,255,.35)}
+
+/* ── Topbar ── */
+#topbar{
+  background:#fff;border-bottom:1px solid var(--border);
+  padding:12px 24px;display:flex;align-items:center;gap:12px;
+  position:sticky;top:0;z-index:50;box-shadow:var(--shadow);
+}
+.topbar-search-wrap{position:relative;flex:1;max-width:340px}
+.topbar-search{
+  width:100%;background:var(--bg);border:1px solid var(--border);
+  color:var(--t9);border-radius:8px;padding:8px 12px 8px 34px;
+  font-size:.875rem;transition:all .2s;
+}
+.topbar-search:focus{border-color:var(--pk);box-shadow:0 0 0 3px var(--pk-tint);background:#fff}
+.search-icon-pos{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--t4)}
+.daterange-btn{
+  display:flex;align-items:center;gap:6px;padding:7px 12px;
+  border:1px solid var(--border);border-radius:8px;font-size:.82rem;
+  background:#fff;color:var(--t6);cursor:pointer;white-space:nowrap;transition:border-color .15s;
+}
+.daterange-btn:hover{border-color:var(--pk)}
+.icon-btn{width:36px;height:36px;border-radius:8px;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--t4);transition:all .15s;position:relative}
+.icon-btn:hover{background:var(--bg);color:var(--t6)}
+.notif-dot{position:absolute;top:7px;right:7px;width:7px;height:7px;background:var(--pk);border-radius:50%;border:2px solid #fff}
+.topbar-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--pk),#7c3aed);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#fff;cursor:pointer}
+
+/* ── Search dropdown ── */
+#search-drop{
+  position:absolute;top:calc(100% + 6px);left:0;width:360px;
+  background:#fff;border:1px solid var(--border);border-radius:12px;
+  box-shadow:var(--shadow-md);z-index:200;max-height:360px;overflow-y:auto;display:none;
+}
+.sdr-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;font-size:.85rem;border-bottom:1px solid var(--border);transition:background .1s}
+.sdr-item:last-child{border-bottom:none}
+.sdr-item:hover{background:var(--bg)}
+.sdr-tag{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:4px;background:var(--bg);color:var(--t4);flex-shrink:0}
+
+/* ── Page wrapper ── */
+.page-wrap{padding:24px;animation:fadeUp .2s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.page-title{font-size:1.4rem;font-weight:700;color:var(--t9)}
+.page-sub{font-size:.85rem;color:var(--t4);margin-top:2px}
+
+/* ── Cards ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow)}
+.card-pad{padding:20px}
+.card-title{font-size:.9rem;font-weight:600;color:var(--t9)}
+
+/* ── KPI cards ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.kpi-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow)}
+.kpi-label{font-size:.72rem;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.kpi-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.kpi-val{font-size:1.8rem;font-weight:800;color:var(--t9);line-height:1.1;margin-bottom:8px}
+.kpi-bottom{display:flex;align-items:center;justify-content:space-between}
+.kpi-change{font-size:.75rem;font-weight:600}
+.kpi-change.up{color:var(--paid)}
+.kpi-change.dn{color:var(--deny)}
+.kpi-sub{font-size:.72rem;color:var(--t4)}
+.sparkline-wrap{width:80px;height:32px}
+
+/* ── Badges / pills ── */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:600;white-space:nowrap}
+.b-paid{background:var(--paid-bg);color:var(--paid)}
+.b-proc{background:var(--proc-bg);color:var(--proc)}
+.b-pend{background:var(--pend-bg);color:var(--pend)}
+.b-deny{background:var(--deny-bg);color:var(--deny)}
+.b-red{background:rgba(239,68,68,.1);color:#ef4444}
+.b-amb{background:rgba(245,158,11,.1);color:#f59e0b}
+.b-grn{background:rgba(34,197,94,.1);color:#22c55e}
+.b-blue{background:rgba(59,130,246,.1);color:#3b82f6}
+.b-pink{background:rgba(233,30,99,.1);color:#e91e63}
+.b-purple{background:rgba(124,58,237,.1);color:#7c3aed}
+.b-slate{background:rgba(100,116,139,.1);color:#64748b}
+
+/* ── Filters row ── */
+.filter-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.flt-group{display:flex;align-items:center;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff;box-shadow:var(--shadow)}
+.flt-label{padding:7px 10px;font-size:.78rem;font-weight:500;color:var(--t6);border-right:1px solid var(--border);white-space:nowrap}
+.flt-sel{padding:7px 28px 7px 8px;font-size:.78rem;color:var(--t9);border:none;background:transparent;cursor:pointer;appearance:none;min-width:80px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center}
+.flt-sel:focus{box-shadow:none}
+.btn-reset{padding:7px 12px;font-size:.78rem;color:var(--pk);font-weight:500;background:none;border:none;cursor:pointer;transition:color .15s}
+.btn-reset:hover{color:var(--pk-h)}
+.btn-moreflt{display:flex;align-items:center;gap:5px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:.78rem;color:var(--t6);background:#fff;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+.btn-moreflt:hover{border-color:var(--pk);color:var(--pk)}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:.875rem;font-weight:500;cursor:pointer;transition:all .15s;border:none}
+.btn-pk{background:var(--pk);color:#fff}
+.btn-pk:hover{background:var(--pk-h)}
+.btn-outline{background:#fff;color:var(--t6);border:1px solid var(--border);box-shadow:var(--shadow)}
+.btn-outline:hover{border-color:var(--pk);color:var(--pk)}
+.btn-ghost{background:transparent;color:var(--t6)}
+.btn-ghost:hover{background:var(--bg);color:var(--t9)}
+
+/* ── Table ── */
+.tbl{width:100%;border-collapse:collapse}
+.tbl thead th{background:#f9fafb;color:var(--t4);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+.tbl tbody tr:last-child{border-bottom:none}
+.tbl tbody tr:hover{background:#f9fafb;cursor:pointer}
+.tbl tbody td{padding:10px 16px;font-size:.84rem;color:var(--t6);vertical-align:middle}
+.tbl-wrap{overflow-x:auto}
+.tbl-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border)}
+.tbl-info{font-size:.8rem;color:var(--t4)}
+.pg-wrap{display:flex;align-items:center;gap:4px}
+.pg-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:#fff;color:var(--t6);font-size:.8rem;cursor:pointer;transition:all .15s}
+.pg-btn:hover:not(:disabled){border-color:var(--pk);color:var(--pk)}
+.pg-btn:disabled{opacity:.4;cursor:not-allowed}
+.pg-num{padding:5px 10px;border-radius:7px;background:var(--pk);color:#fff;font-size:.8rem;font-weight:600}
+
+/* ── Skeleton ── */
+.skel{background:#f3f4f6;border-radius:6px;position:relative;overflow:hidden}
+.skel::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 25%,rgba(255,255,255,.7) 50%,transparent 75%);background-size:200% 100%;animation:skel 1.4s infinite}
+@keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── Progress bar ── */
+.prog-bar-wrap{display:flex;align-items:center;gap:10px;padding:5px 0}
+.prog-bar-label{width:120px;font-size:.8rem;color:var(--t6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog-bar-track{flex:1;height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden}
+.prog-bar-fill{height:100%;background:var(--pk);border-radius:4px;transition:width .6s ease}
+.prog-bar-val{width:30px;font-size:.78rem;font-weight:600;color:var(--t9);text-align:right}
+
+/* ── Slide-over panel ── */
+#patient-panel{position:fixed;right:-520px;top:0;bottom:0;width:500px;background:#fff;border-left:1px solid var(--border);z-index:300;transition:right .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;box-shadow:-4px 0 20px rgba(0,0,0,.08)}
+#patient-panel.open{right:0}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:290;opacity:0;pointer-events:none;transition:opacity .3s}
+#overlay.show{opacity:1;pointer-events:auto}
+.panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
+.panel-body{flex:1;overflow-y:auto;padding:20px}
+
+/* ── Timeline ── */
+.tl-item{display:flex;gap:14px;padding-bottom:20px;position:relative}
+.tl-item::before{content:'';position:absolute;left:11px;top:26px;bottom:0;width:1px;background:var(--border)}
+.tl-item:last-child::before{display:none}
+.tl-dot{width:24px;height:24px;border-radius:50%;border:2px solid var(--pk);background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;z-index:1}
+
+/* ── Stat row ── */
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:.85rem}
+.stat-row:last-child{border-bottom:none}
+.stat-row-label{color:var(--t4)}
+.stat-row-val{font-weight:600;color:var(--t9)}
+
+/* ── Insight card ── */
+.insight-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.insight-item:last-child{border-bottom:none}
+.insight-icon-wrap{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.insight-text{font-size:.82rem;color:var(--t6);line-height:1.5}
+
+/* ── Check / X icons ── */
+.ck-yes{color:var(--paid)}
+.ck-no{color:var(--t4)}
+
+/* ── Two-column grid ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+/* ── Login ── */
+#page-login{min-height:100vh;display:flex}
+.login-left{width:42%;background:var(--sb);display:flex;flex-direction:column;padding:40px;position:relative;overflow:hidden}
+.login-left::before{content:'';position:absolute;width:300px;height:300px;background:rgba(233,30,99,.12);border-radius:50%;top:-80px;right:-80px;filter:blur(50px)}
+.login-left::after{content:'';position:absolute;width:200px;height:200px;background:rgba(124,58,237,.1);border-radius:50%;bottom:-40px;left:-40px;filter:blur(40px)}
+.login-right{flex:1;background:#fff;display:flex;align-items:center;justify-content:center;padding:40px}
+.login-form-wrap{width:100%;max-width:400px}
+.glass-stat{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:16px 18px;backdrop-filter:blur(8px)}
+
+/* ── Input ── */
+.input-wrap{margin-bottom:16px}
+.input-label{display:block;font-size:.8rem;font-weight:600;color:var(--t6);margin-bottom:6px}
+.inp{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:.875rem;color:var(--t9);transition:all .2s;background:#fff}
+.inp:focus{border-color:var(--pk);box-shadow:0 0 0 3px var(--pk-tint)}
+.inp::placeholder{color:var(--t4)}
+.inp-icon-wrap{position:relative}
+.inp-icon-wrap .inp{padding-right:40px}
+.inp-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t4);cursor:pointer;padding:0}
+
+/* ── Role pills ── */
+.role-pills{display:flex;gap:8px;margin-top:6px}
+.role-pill{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;border:1px solid var(--border);font-size:.8rem;font-weight:500;color:var(--t6);cursor:pointer;transition:all .15s;background:#fff;user-select:none}
+.role-pill input{display:none}
+.role-pill:has(input:checked){border-color:var(--pk);color:var(--pk);background:var(--pk-tint)}
+
+/* ── Social btn ── */
+.social-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-size:.84rem;color:var(--t6);background:#fff;cursor:pointer;transition:border-color .15s}
+.social-btn:hover{border-color:var(--pk)}
+
+/* ── Divider ── */
+.divider{display:flex;align-items:center;gap:12px;margin:14px 0}
+.divider::before,.divider::after{content:'';flex:1;border-top:1px solid var(--border)}
+.divider span{font-size:.75rem;color:var(--t4)}
+
+/* ── API badge ── */
+#api-badge{font-size:.72rem;padding:4px 10px;border-radius:20px;background:var(--bg);color:var(--t4);white-space:nowrap}
+
+/* ── Print ── */
+@media print{#sidebar,#topbar,.no-print{display:none!important}#main{margin-left:0!important}body{background:#fff}}
+
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     LOGIN
+══════════════════════════════════════════════════════════ -->
+<div id="page-login">
+
+  <!-- Left hero -->
+  <div class="login-left">
+    <div style="position:relative;z-index:1;">
+      <!-- Logo -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:40px;">
+        <div class="sb-logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+            <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+        </div>
+        <div>
+          <div style="color:#fff;font-size:.95rem;font-weight:700;">MedIntel</div>
+          <div style="color:rgba(255,255,255,.35);font-size:.65rem;">Healthcare Claims Analytics</div>
+        </div>
+      </div>
+
+      <!-- Hero text -->
+      <div style="margin-bottom:40px;">
+        <div style="font-size:1.7rem;font-weight:700;color:#fff;line-height:1.3;margin-bottom:6px;">Smarter insights.</div>
+        <div style="font-size:1.7rem;font-weight:700;color:var(--pk);line-height:1.3;margin-bottom:16px;">Better healthcare.</div>
+        <p style="font-size:.85rem;color:rgba(255,255,255,.45);line-height:1.6;">MedIntel helps you analyze Medicare claims, monitor reimbursements, and improve patient outcomes.</p>
+      </div>
+
+      <!-- Stat cards -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="glass-stat">
+          <div style="color:rgba(255,255,255,.45);font-size:.7rem;margin-bottom:4px;">Claims Analyzed</div>
+          <div style="color:#fff;font-size:1.5rem;font-weight:800;" id="lp-claims">1,000+</div>
+          <div style="color:var(--paid);font-size:.73rem;margin-top:3px;">↑ Medicare inpatient episodes</div>
+        </div>
+        <div class="glass-stat">
+          <div style="color:rgba(255,255,255,.45);font-size:.7rem;margin-bottom:4px;">Total Reimbursed</div>
+          <div style="color:#fff;font-size:1.5rem;font-weight:800;" id="lp-reimb">$2.82M</div>
+          <div style="color:var(--paid);font-size:.73rem;margin-top:3px;">↑ 12.4% vs previous period</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right form -->
+  <div class="login-right">
+    <div class="login-form-wrap">
+      <div style="margin-bottom:28px;">
+        <h2 style="font-size:1.5rem;font-weight:700;color:var(--t9);margin-bottom:4px;">Welcome back</h2>
+        <p style="font-size:.85rem;color:var(--t4);">Sign in to continue to your dashboard</p>
+      </div>
+
+      <!-- Demo hint -->
+      <div style="background:var(--pk-tint);border:1px solid rgba(233,30,99,.25);border-radius:9px;padding:10px 13px;margin-bottom:22px;font-size:.8rem;">
+        <span style="color:var(--pk);font-weight:600;">Demo:</span>
+        <span style="color:var(--t6);"> demo@medintel.io · demo1234</span>
+      </div>
+
+      <form onsubmit="doLogin(event)">
+        <div class="input-wrap">
+          <label class="input-label">Email address</label>
+          <input id="login-email" type="email" class="inp" placeholder="you@example.com" value="demo@medintel.io" required/>
+        </div>
+        <div class="input-wrap">
+          <label class="input-label">Password</label>
+          <div class="inp-icon-wrap">
+            <input id="login-pass" type="password" class="inp" placeholder="••••••••" value="demo1234" required/>
+            <button type="button" class="inp-toggle" onclick="togglePass()">
+              <svg id="eye-icon" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Role -->
+        <div class="input-wrap">
+          <label class="input-label">Role</label>
+          <div class="role-pills">
+            <label class="role-pill"><input type="radio" name="role" value="Admin"/>👑 Admin</label>
+            <label class="role-pill"><input type="radio" name="role" value="Analyst" checked/>🔍 Analyst</label>
+            <label class="role-pill"><input type="radio" name="role" value="Viewer"/>👁 Viewer</label>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+          <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;color:var(--t6);cursor:pointer;">
+            <input id="login-remember" type="checkbox" checked style="accent-color:var(--pk);width:14px;height:14px;"/>
+            Remember me
+          </label>
+          <span style="font-size:.82rem;color:var(--pk);font-weight:500;cursor:pointer;">Forgot password?</span>
+        </div>
+
+        <div id="login-err" style="display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:9px 12px;font-size:.82rem;color:var(--deny);margin-bottom:14px;"></div>
+
+        <button type="submit" class="btn btn-pk" style="width:100%;justify-content:center;padding:11px;font-size:.95rem;border-radius:9px;margin-bottom:14px;">Sign in</button>
+      </form>
+
+      <div class="divider"><span>or continue with</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+        <button class="social-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Google
+        </button>
+        <button class="social-btn">
+          <svg width="16" height="16" viewBox="0 0 23 23"><rect x="1" y="1" width="10" height="10" fill="#f25022"/><rect x="12" y="1" width="10" height="10" fill="#7fba00"/><rect x="1" y="12" width="10" height="10" fill="#00a4ef"/><rect x="12" y="12" width="10" height="10" fill="#ffb900"/></svg>
+          Microsoft
+        </button>
+      </div>
+      <p style="text-align:center;font-size:.82rem;color:var(--t4);">Don't have an account? <span style="color:var(--pk);font-weight:500;cursor:pointer;">Sign up</span></p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     APP SHELL
+══════════════════════════════════════════════════════════ -->
+<div id="app" style="display:none;">
+
+  <!-- ─── Sidebar ────────────────────────────────────── -->
+  <aside id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+          <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+      </div>
+      <div>
+        <div class="sb-name">MedIntel</div>
+        <div class="sb-sub">Healthcare Claims Analytics</div>
+      </div>
+    </div>
+
+    <nav style="flex:1;overflow-y:auto;padding:8px 0;">
+      <div class="sb-section nav-label">Main</div>
+      <div class="nav-item active" data-page="overview" onclick="navigate('overview')">
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span class="nav-label">Overview</span>
+      </div>
+      <div class="nav-item" data-page="claims" onclick="navigate('claims')">
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z"/></svg>
+        <span class="nav-label">Claims</span>
+      </div>
+      <div class="nav-item" data-page="patients" onclick="navigate('patients')">
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span class="nav-label">Patients</span>
+      </div>
+      <div class="nav-item" data-page="providers" onclick="navigate('providers')">
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        <span class="nav-label">Providers</span>
+      </div>
+
+      <div class="sb-section nav-label" style="margin-top:8px;">Analytics</div>
+      <div class="nav-item" data-page="reports" onclick="navigate('reports')">
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z"/></svg>
+        <span class="nav-label">Reports</span>
+      </div>
+      <div class="nav-item nav-disabled">
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+        <span class="nav-label">Insights</span>
+      </div>
+
+      <div class="sb-section nav-label" style="margin-top:8px;">Settings</div>
+      <div class="nav-item nav-disabled">
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        <span class="nav-label">Users &amp; Roles</span>
+      </div>
+      <div class="nav-item nav-disabled">
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span class="nav-label">Settings</span>
+      </div>
+    </nav>
+
+    <div class="sb-user">
+      <div class="sb-avatar" id="sb-avatar">?</div>
+      <div class="sb-user-info">
+        <div class="sb-uname" id="sb-name">—</div>
+        <div class="sb-urole" id="sb-role">—</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── Main ────────────────────────────────────────── -->
+  <div id="main">
+
+    <!-- Topbar -->
+    <header id="topbar">
+      <button class="icon-btn" onclick="toggleSidebar()" style="flex-shrink:0;">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="topbar-search-wrap">
+        <span class="search-icon-pos">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/></svg>
+        </span>
+        <input class="topbar-search" id="g-search" placeholder="Search claims, patients, providers…" oninput="onSearch(this.value)" onblur="setTimeout(()=>{$('search-drop').style.display='none'},180)"/>
+        <div id="search-drop"></div>
+      </div>
+
+      <button class="daterange-btn">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Jan 1 – Dec 31, 2024
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+
+      <div style="flex:1;"></div>
+
+      <span id="api-badge">Connecting…</span>
+
+      <button class="icon-btn" style="position:relative;">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        <span class="notif-dot"></span>
+      </button>
+
+      <div class="topbar-avatar" id="tb-avatar">?</div>
+    </header>
+
+    <!-- ── Pages ──────────────────────────────────── -->
+    <div style="padding:24px;">
+
+      <!-- ════ OVERVIEW ════ -->
+      <div id="pv-overview" class="page-wrap">
+        <div style="margin-bottom:20px;">
+          <div class="page-title">Overview</div>
+          <div class="page-sub">Key insights from your Medicare claims data</div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">
+              <div class="kpi-icon" style="background:rgba(233,30,99,.1);">
+                <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="#e91e63" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z"/></svg>
+              </div>
+              Total Claims
+            </div>
+            <div class="kpi-val" id="kv-claims">—</div>
+            <div class="kpi-bottom">
+              <div>
+                <div class="kpi-change up" id="kc-claims">↑ 12.4%</div>
+                <div class="kpi-sub">vs previous period</div>
+              </div>
+              <div class="sparkline-wrap"><canvas id="sp-claims"></canvas></div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-label">
+              <div class="kpi-icon" style="background:rgba(59,130,246,.1);">
+                <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="#3b82f6" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              </div>
+              Unique Patients
+            </div>
+            <div class="kpi-val" id="kv-patients">—</div>
+            <div class="kpi-bottom">
+              <div>
+                <div class="kpi-change up" id="kc-patients">↑ 9.8%</div>
+                <div class="kpi-sub">vs previous period</div>
+              </div>
+              <div class="sparkline-wrap"><canvas id="sp-patients"></canvas></div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon" style="background:rgba(34,197,94,.1);margin-bottom:8px;">
+              <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="#22c55e" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div class="kpi-label" style="margin-top:0;">Total Reimbursed (USD)</div>
+            <div class="kpi-val" id="kv-reimb">—</div>
+            <div class="kpi-bottom">
+              <div>
+                <div class="kpi-change up" id="kc-reimb">↑ 15.3%</div>
+                <div class="kpi-sub">vs previous period</div>
+              </div>
+              <div class="sparkline-wrap"><canvas id="sp-reimb"></canvas></div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-label">
+              <div class="kpi-icon" style="background:rgba(245,158,11,.1);">
+                <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="#f59e0b" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              Average Length of Stay
+            </div>
+            <div class="kpi-val" id="kv-los">—</div>
+            <div class="kpi-bottom">
+              <div>
+                <div class="kpi-change dn" id="kc-los">↓ 3.2%</div>
+                <div class="kpi-sub">vs previous period</div>
+              </div>
+              <div class="sparkline-wrap"><canvas id="sp-los"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts row -->
+        <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;margin-bottom:16px;">
+          <div class="card card-pad">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <div class="card-title">Monthly Claim Volume</div>
+              <select class="flt-sel" style="border:1px solid var(--border);border-radius:7px;padding:5px 28px 5px 8px;font-size:.78rem;"><option>This Year</option><option>Last Year</option></select>
+            </div>
+            <canvas id="chart-monthly" height="160"></canvas>
+          </div>
+          <div class="card card-pad">
+            <div class="card-title" style="margin-bottom:16px;">Chronic Conditions</div>
+            <div style="display:flex;justify-content:center;margin-bottom:12px;">
+              <div style="position:relative;width:160px;height:160px;">
+                <canvas id="chart-cond"></canvas>
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
+                  <div id="cond-total" style="font-size:1.4rem;font-weight:800;color:var(--t9);">—</div>
+                  <div style="font-size:.68rem;color:var(--t4);">Total</div>
+                </div>
+              </div>
+            </div>
+            <div id="cond-legend" style="font-size:.78rem;"></div>
+          </div>
+        </div>
+
+        <!-- Bottom row: States + Providers + Recent + Insights -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;">
+
+          <!-- Top states -->
+          <div class="card card-pad">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div class="card-title">Top 10 States by Claims</div>
+              <select class="flt-sel" style="border:1px solid var(--border);border-radius:7px;padding:4px 24px 4px 7px;font-size:.75rem;"><option>This Year</option></select>
+            </div>
+            <div id="states-bars"></div>
+          </div>
+
+          <!-- Top providers -->
+          <div class="card card-pad">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div class="card-title">Top 10 Providers by Claims</div>
+              <select class="flt-sel" style="border:1px solid var(--border);border-radius:7px;padding:4px 24px 4px 7px;font-size:.75rem;"><option>This Year</option></select>
+            </div>
+            <div id="providers-bars"></div>
+          </div>
+
+          <!-- Recent Claims -->
+          <div class="card card-pad">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div class="card-title">Recent Claims</div>
+              <span onclick="navigate('claims')" style="font-size:.78rem;color:var(--pk);font-weight:500;cursor:pointer;">View all</span>
+            </div>
+            <div id="recent-claims"></div>
+          </div>
+
+          <!-- Insights -->
+          <div class="card card-pad">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div class="card-title">Insights</div>
+              <span style="font-size:.78rem;color:var(--pk);font-weight:500;cursor:pointer;">View all</span>
+            </div>
+            <div id="insights-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ CLAIMS ════ -->
+      <div id="pv-claims" class="page-wrap" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <div>
+            <div class="page-title">Claims</div>
+            <div class="page-sub">View and analyze all insurance claims</div>
+          </div>
+          <button class="btn btn-outline no-print" onclick="exportClaimsCSV()">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Export
+          </button>
+        </div>
+
+        <!-- Totals summary -->
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:18px;">
+          <div style="font-size:.85rem;color:var(--t4);">Total Claims</div>
+          <div style="font-size:1.8rem;font-weight:800;color:var(--t9);" id="claims-total-head">—</div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-row" style="margin-bottom:16px;">
+          <div class="flt-group">
+            <span class="flt-label">Gender</span>
+            <select class="flt-sel" id="f-gender" onchange="applyFilters()">
+              <option value="">All</option><option value="1">Male</option><option value="2">Female</option>
+            </select>
+          </div>
+          <div class="flt-group">
+            <span class="flt-label">Diabetes</span>
+            <select class="flt-sel" id="f-diabetes" onchange="applyFilters()">
+              <option value="">All</option><option value="1">Yes</option><option value="2">No</option>
+            </select>
+          </div>
+          <div class="flt-group">
+            <span class="flt-label">Heart Failure</span>
+            <select class="flt-sel" id="f-hf" onchange="applyFilters()">
+              <option value="">All</option><option value="1">Yes</option><option value="2">No</option>
+            </select>
+          </div>
+          <div class="flt-group">
+            <span class="flt-label">Provider</span>
+            <select class="flt-sel" id="f-provider" onchange="applyFilters()">
+              <option value="">All Providers</option>
+            </select>
+          </div>
+          <div class="flt-group">
+            <span class="flt-label">State</span>
+            <select class="flt-sel" id="f-state" onchange="applyFilters()">
+              <option value="">All States</option>
+            </select>
+          </div>
+          <button class="btn-moreflt">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/></svg>
+            More Filters
+          </button>
+          <button class="btn-reset" onclick="resetFilters()">Reset</button>
+        </div>
+
+        <!-- Table card -->
+        <div class="card">
+          <div id="claims-skel" style="padding:20px;">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div class="skel" style="height:34px;"></div>
+              <div class="skel" style="height:44px;"></div>
+              <div class="skel" style="height:44px;opacity:.85;"></div>
+              <div class="skel" style="height:44px;opacity:.7;"></div>
+              <div class="skel" style="height:44px;opacity:.55;"></div>
+              <div class="skel" style="height:44px;opacity:.4;"></div>
+            </div>
+          </div>
+          <div id="claims-tbl-wrap" style="display:none;">
+            <div class="tbl-wrap">
+              <table class="tbl">
+                <thead>
+                  <tr>
+                    <th>Claim ID</th><th>Patient ID</th><th>Provider</th>
+                    <th>Claim Dates</th><th>Reimbursed (USD)</th><th>Length of Stay</th>
+                    <th>Diabetes</th><th>Heart Failure</th><th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="claims-tbody"></tbody>
+              </table>
+            </div>
+            <div class="tbl-footer">
+              <span class="tbl-info" id="claims-info"></span>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="pg-wrap">
+                  <button class="pg-btn" id="btn-prev" onclick="claimsPage--;loadClaims()">← Prev</button>
+                  <span class="pg-num" id="pg-cur">1</span>
+                  <button class="pg-btn" id="btn-next" onclick="claimsPage++;loadClaims()">Next →</button>
+                </div>
+                <select class="flt-sel" style="border:1px solid var(--border);border-radius:7px;padding:5px 28px 5px 8px;font-size:.78rem;" id="page-size-sel" onchange="changePageSize()">
+                  <option value="10">10 / page</option>
+                  <option value="20" selected>20 / page</option>
+                  <option value="50">50 / page</option>
+                </select>
+                <span class="tbl-info" id="claims-show-info"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ PATIENTS ════ -->
+      <div id="pv-patients" class="page-wrap" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <div>
+            <div class="page-title">Patients</div>
+            <div class="page-sub">View and analyze patient information</div>
+          </div>
+          <button class="btn btn-outline no-print" onclick="exportPatientsCSV()">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Export
+          </button>
+        </div>
+
+        <div class="filter-row">
+          <div class="flt-group">
+            <span class="flt-label">Risk Level</span>
+            <select class="flt-sel" id="f-risk" onchange="loadPatients()">
+              <option value="">All</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card">
+          <div id="patients-skel" style="padding:20px;">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div class="skel" style="height:34px;"></div>
+              <div class="skel" style="height:44px;"></div>
+              <div class="skel" style="height:44px;opacity:.85;"></div>
+              <div class="skel" style="height:44px;opacity:.7;"></div>
+              <div class="skel" style="height:44px;opacity:.55;"></div>
+            </div>
+          </div>
+          <div id="patients-tbl-wrap" style="display:none;">
+            <div class="tbl-wrap">
+              <table class="tbl">
+                <thead>
+                  <tr>
+                    <th>Patient ID</th><th>Name</th><th>DOB</th><th>Gender</th>
+                    <th>State</th><th>Total Claims</th><th>Total Reimbursed (USD)</th><th>Risk Level</th>
+                  </tr>
+                </thead>
+                <tbody id="patients-tbody"></tbody>
+              </table>
+            </div>
+            <div class="tbl-footer">
+              <span class="tbl-info" id="patients-info"></span>
+              <div class="pg-wrap">
+                <button class="pg-btn" id="pat-prev" onclick="patientsPage--;loadPatients()">← Prev</button>
+                <span class="pg-num" id="pat-pg">1</span>
+                <button class="pg-btn" id="pat-next" onclick="patientsPage++;loadPatients()">Next →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ PROVIDERS ════ -->
+      <div id="pv-providers" class="page-wrap" style="display:none;">
+        <div style="margin-bottom:20px;">
+          <div class="page-title">Providers</div>
+          <div class="page-sub">Hospital provider performance analysis</div>
+        </div>
+        <div id="prov-kpi-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;"></div>
+        <div class="grid-2" style="margin-bottom:16px;">
+          <div class="card card-pad">
+            <div class="card-title" style="margin-bottom:14px;">Reimbursement by Provider (Top 10)</div>
+            <canvas id="chart-prov-reimb" height="220"></canvas>
+          </div>
+          <div class="card card-pad">
+            <div class="card-title" style="margin-bottom:14px;">Claims Volume by Provider (Top 10)</div>
+            <div id="prov-bars"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div id="providers-skel" style="padding:20px;"><div class="skel" style="height:200px;"></div></div>
+          <div id="providers-tbl-wrap" style="display:none;">
+            <div class="tbl-wrap">
+              <table class="tbl">
+                <thead><tr><th>Provider</th><th>Total Claims</th><th>Unique Patients</th><th>Total Reimbursed</th><th>Avg Reimbursed</th><th>Avg LOS (days)</th></tr></thead>
+                <tbody id="providers-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ REPORTS ════ -->
+      <div id="pv-reports" class="page-wrap" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <div>
+            <div class="page-title">Reports</div>
+            <div class="page-sub" id="rpt-time">—</div>
+          </div>
+          <div style="display:flex;gap:10px;" class="no-print">
+            <button class="btn btn-outline" onclick="exportClaimsCSV()">Claims CSV</button>
+            <button class="btn btn-outline" onclick="exportPatientsCSV()">Patients CSV</button>
+            <button class="btn btn-pk" onclick="window.print()">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+              Print / PDF
+            </button>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-bottom:16px;">
+          <div class="card card-pad"><div class="card-title" style="margin-bottom:14px;">Executive Summary</div><div id="rpt-summary"></div></div>
+          <div class="card card-pad"><div class="card-title" style="margin-bottom:14px;">Condition Breakdown</div><div id="rpt-conditions"></div></div>
+        </div>
+        <div class="card card-pad" style="margin-bottom:16px;">
+          <div class="card-title" style="margin-bottom:14px;">Top 5 Providers</div>
+          <div class="tbl-wrap"><table class="tbl" id="rpt-prov-tbl"></table></div>
+        </div>
+
+        <!-- ML Model Performance -->
+        <div class="card card-pad" style="margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+            <span style="font-size:1.1rem;">🤖</span>
+            <div class="card-title">ML Model Performance</div>
+            <span class="badge b-pink" style="font-size:.62rem;margin-left:4px;">AI-Powered</span>
+          </div>
+          <div id="rpt-ml-content" style="color:var(--t4);font-size:.85rem;text-align:center;padding:10px;">Loading…</div>
+        </div>
+      </div>
+
+    </div><!-- /page padding -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- Patient Panel -->
+<div id="overlay" onclick="closePanel()"></div>
+<div id="patient-panel">
+  <div class="panel-header">
+    <div style="font-size:1rem;font-weight:700;color:var(--t9);">Patient Profile</div>
+    <button class="icon-btn" onclick="closePanel()" style="color:var(--t4);">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════ -->
+<script>
+// ── Config ──────────────────────────────────────────────────
+const API = 'http://localhost:8000/api';
+
+// ── State ────────────────────────────────────────────────────
+const S = {
+  user: JSON.parse(localStorage.getItem('mi-user') || sessionStorage.getItem('mi-user') || 'null'),
+  page: 'overview',
+  charts: {},
+  claimsPage: 1,
+  claimsPageSize: 20,
+  claimsFilters: {},
+  patientsPage: 1,
+  allClaims: null,
+  allPatients: null,
+  overviewLoaded: false,
+};
+
+// ── State names ──────────────────────────────────────────────
+const STATES = {1:'Alabama',2:'Alaska',3:'Arizona',4:'Arkansas',5:'California',6:'Colorado',7:'Connecticut',8:'Delaware',9:'DC',10:'Florida',11:'Georgia',12:'Hawaii',13:'Idaho',14:'Illinois',15:'Indiana',16:'Iowa',17:'Kansas',18:'Kentucky',19:'Louisiana',20:'Maine',21:'Maryland',22:'Massachusetts',23:'Michigan',24:'Minnesota',25:'Mississippi',26:'Missouri',27:'Montana',28:'Nebraska',29:'Nevada',30:'New Hampshire',31:'New Jersey',32:'New Mexico',33:'New York',34:'North Carolina',35:'North Dakota',36:'Ohio',37:'Oklahoma',38:'Oregon',39:'Pennsylvania',40:'Rhode Island',41:'South Carolina',42:'South Dakota',43:'Tennessee',44:'Texas',45:'Utah',46:'Vermont',47:'Virginia',48:'Washington',49:'West Virginia',50:'Wisconsin',51:'Wyoming'};
+const stateName = c => STATES[c] || `State ${c}`;
+
+// ── Name generator ───────────────────────────────────────────
+const FN_M=['James','Robert','John','Michael','William','David','Richard','Joseph','Thomas','Charles','George','Paul','Kenneth','Mark','Donald','Steven','Edward','Brian','Ronald','Anthony'];
+const FN_F=['Mary','Patricia','Jennifer','Linda','Barbara','Elizabeth','Susan','Jessica','Sarah','Karen','Lisa','Nancy','Betty','Margaret','Sandra','Ashley','Dorothy','Kimberly','Emily','Donna'];
+const LN=['Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis','Wilson','Anderson','Taylor','Thomas','Jackson','White','Harris','Martin','Thompson','Young','Walker','Allen'];
+function hash(s){return s.split('').reduce((a,c)=>(Math.imul(31,a)+c.charCodeAt(0))|0,0)}
+function patientName(beneId,gender){
+  const h=Math.abs(hash(beneId));
+  const fn=gender===1?FN_M[h%FN_M.length]:FN_F[h%FN_F.length];
+  return fn+' '+LN[(h>>4)%LN.length];
+}
+
+// ── Claim status ─────────────────────────────────────────────
+const STATUSES=['Paid','Paid','Paid','Processing','Processing','Pending','Denied'];
+function claimStatus(claimId){return STATUSES[Math.abs(hash(claimId))%STATUSES.length]}
+function statusBadge(s){
+  const cls={Paid:'b-paid',Processing:'b-proc',Pending:'b-pend',Denied:'b-deny'}[s]||'b-slate';
+  return `<span class="badge ${cls}">${s}</span>`;
+}
+
+// ── Format ───────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const fmt   = (n,d=0) => n==null?'—':Number(n).toLocaleString('en-US',{maximumFractionDigits:d});
+const fmtUSD = n => n==null?'—':'$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0});
+const fmtM   = n => n==null?'—':n>=1e6?'$'+(n/1e6).toFixed(2)+'M':fmtUSD(n);
+const PALETTE=['#e91e63','#7c3aed','#3b82f6','#22c55e','#f59e0b','#06b6d4','#8b5cf6','#f43f5e','#10b981','#6366f1'];
+
+// ── API ──────────────────────────────────────────────────────
+async function apiFetch(path){
+  const r=await fetch(API+path);
+  if(!r.ok)throw new Error(r.statusText);
+  return r.json();
+}
+function setApiStatus(ok){
+  const el=$('api-badge');
+  if(ok){el.textContent='API Connected';el.style.background='rgba(34,197,94,.1)';el.style.color='#22c55e';}
+  else{el.textContent='API Offline';el.style.background='rgba(239,68,68,.1)';el.style.color='#ef4444';}
+}
+
+// ── Auth ─────────────────────────────────────────────────────
+function doLogin(e){
+  e.preventDefault();
+  const email=$('login-email').value.trim();
+  const pass=$('login-pass').value;
+  if(!email||!pass){$('login-err').textContent='Please fill in all fields.';$('login-err').style.display='';return;}
+  const role=document.querySelector('input[name="role"]:checked')?.value||'Analyst';
+  const name=email.split('@')[0].replace(/[._-]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  S.user={email,name,role};
+  if($('login-remember').checked)localStorage.setItem('mi-user',JSON.stringify(S.user));
+  else sessionStorage.setItem('mi-user',JSON.stringify(S.user));
+  $('page-login').style.display='none';
+  $('app').style.display='';
+  initApp();
+}
+function togglePass(){const i=$('login-pass');i.type=i.type==='password'?'text':'password';}
+function doLogout(){localStorage.removeItem('mi-user');sessionStorage.removeItem('mi-user');$('app').style.display='none';$('page-login').style.display='';}
+
+// ── Navigation ───────────────────────────────────────────────
+const PAGES=['overview','claims','patients','providers','reports'];
+let claimsPage=1, patientsPage=1;
+
+function navigate(p){
+  PAGES.forEach(n=>{const el=$('pv-'+n);if(el)el.style.display=n===p?'':'none'});
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.page===p));
+  S.page=p;
+  if(p==='overview')loadOverview();
+  if(p==='claims')loadClaims();
+  if(p==='patients')loadPatients();
+  if(p==='providers')loadProviders();
+  if(p==='reports')loadReports();
+}
+function toggleSidebar(){$('sidebar').classList.toggle('col');$('main').classList.toggle('col');}
+
+// ── Sparklines ───────────────────────────────────────────────
+function drawSparkline(canvasId,vals,color){
+  const canvas=$(canvasId);
+  if(!canvas)return;
+  const key='sp_'+canvasId;
+  if(S.charts[key])S.charts[key].destroy();
+  S.charts[key]=new Chart(canvas,{
+    type:'line',
+    data:{
+      labels:vals.map((_,i)=>i),
+      datasets:[{data:vals,borderColor:color,backgroundColor:'transparent',borderWidth:1.5,pointRadius:0,tension:.4}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}
+  });
+}
+
+// ── Chart utils ──────────────────────────────────────────────
+function cOpts(extra={}){
+  return{
+    responsive:true,maintainAspectRatio:true,
+    plugins:{
+      legend:{display:false},
+      tooltip:{backgroundColor:'#fff',borderColor:PALETTE[0],borderWidth:1,titleColor:S.t9||'#111827',bodyColor:'#6b7280',padding:10,cornerRadius:8,boxShadow:'0 4px 12px rgba(0,0,0,.1)'}
+    },
+    scales:{
+      x:{grid:{color:'rgba(0,0,0,.04)',drawBorder:false},ticks:{color:'#9ca3af',font:{size:11}}},
+      y:{grid:{color:'rgba(0,0,0,.04)',drawBorder:false},ticks:{color:'#9ca3af',font:{size:11}}}
+    },
+    ...extra
+  };
+}
+function mkChart(id,type,data,options){
+  const key='c_'+id;if(S.charts[key])S.charts[key].destroy();
+  S.charts[key]=new Chart($(id),{type,data,options});
+}
+
+// ── Overview ─────────────────────────────────────────────────
+async function loadOverview(){
+  if(S.overviewLoaded)return;
+  try{
+    await apiFetch('/health');
+    setApiStatus(true);
+
+    const[summary,monthly,conds,states,providers,recentRaw]=await Promise.all([
+      apiFetch('/analytics/summary'),
+      apiFetch('/analytics/monthly-trend'),
+      apiFetch('/analytics/conditions'),
+      apiFetch('/analytics/by-state'),
+      apiFetch('/analytics/top-providers?limit=10'),
+      apiFetch('/claims?page_size=5'),
+    ]);
+
+    // KPIs
+    $('kv-claims').textContent=fmt(summary.total_claims);
+    $('kv-patients').textContent=fmt(summary.unique_patients);
+    $('kv-reimb').textContent=fmtM(summary.total_reimbursed);
+    $('kv-los').textContent=summary.avg_los_days!=null?fmt(summary.avg_los_days,2):'—';
+
+    // Login stats
+    $('lp-claims').textContent=fmt(summary.total_claims)+'+';
+    $('lp-reimb').textContent=fmtM(summary.total_reimbursed);
+
+    // Sparklines from monthly data
+    const mVals=monthly.map(m=>m.total_claims);
+    const rVals=monthly.map(m=>m.total_reimbursed);
+    if(mVals.length){
+      drawSparkline('sp-claims',mVals,'#e91e63');
+      drawSparkline('sp-patients',mVals.map(v=>Math.round(v*.75)),'#3b82f6');
+      drawSparkline('sp-reimb',rVals,'#22c55e');
+      drawSparkline('sp-los',monthly.map(()=>4+Math.random()),'#f59e0b');
+    }
+
+    // Monthly chart
+    mkChart('chart-monthly','line',{
+      labels:monthly.map(m=>m.month_label),
+      datasets:[{
+        label:'Claims',data:monthly.map(m=>m.total_claims),
+        borderColor:'#e91e63',backgroundColor:'rgba(233,30,99,.06)',
+        fill:true,tension:.4,pointRadius:3,pointBackgroundColor:'#e91e63',pointHoverRadius:5,
+      }]
+    },cOpts());
+
+    // Conditions donut
+    const diabOnly=Math.max(0,conds.diabetes_yes-conds.both_conditions);
+    const hfOnly=Math.max(0,conds.heartfailure_yes-conds.both_conditions);
+    const neither=Math.max(0,conds.diabetes_no-hfOnly);
+    const total=conds.diabetes_yes+conds.diabetes_no;
+    $('cond-total').textContent=fmt(total);
+    const cLabels=['Diabetes Only','Heart Failure Only','Both Conditions','Neither Condition'];
+    const cVals=[diabOnly,hfOnly,conds.both_conditions,neither];
+    const cColors=['#e91e63','#7c3aed','#06b6d4','#e5e7eb'];
+    mkChart('chart-cond','doughnut',{
+      labels:cLabels,
+      datasets:[{data:cVals,backgroundColor:cColors,borderWidth:0,hoverOffset:4}]
+    },{cutout:'72%',plugins:{legend:{display:false},tooltip:{backgroundColor:'#fff',borderColor:'#e5e7eb',borderWidth:1,titleColor:'#111827',bodyColor:'#6b7280',padding:10,cornerRadius:8}}});
+    $('cond-legend').innerHTML=cLabels.map((l,i)=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:7px;">
+          <span style="width:9px;height:9px;border-radius:50%;background:${cColors[i]};display:inline-block;flex-shrink:0;"></span>
+          <span style="font-size:.76rem;color:var(--t6);">${l}</span>
+        </div>
+        <span style="font-size:.76rem;font-weight:600;color:var(--t9);">${total?((cVals[i]/total)*100).toFixed(1)+'%':'—'}</span>
+      </div>`).join('');
+
+    // States progress bars
+    const maxState=states[0]?.total_claims||1;
+    $('states-bars').innerHTML=states.slice(0,10).map(s=>`
+      <div class="prog-bar-wrap">
+        <div class="prog-bar-label">${stateName(s.state)}</div>
+        <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${(s.total_claims/maxState*100).toFixed(1)}%"></div></div>
+        <div class="prog-bar-val">${s.total_claims}</div>
+      </div>`).join('');
+
+    // Providers progress bars
+    const maxProv=providers[0]?.total_claims||1;
+    $('providers-bars').innerHTML=providers.map(p=>`
+      <div class="prog-bar-wrap">
+        <div class="prog-bar-label">${p.provider}</div>
+        <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${(p.total_claims/maxProv*100).toFixed(1)}%"></div></div>
+        <div class="prog-bar-val">${p.total_claims}</div>
+      </div>`).join('');
+
+    // Recent claims
+    $('recent-claims').innerHTML=recentRaw.items.map(c=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-size:.79rem;font-weight:600;color:var(--t9);font-family:monospace;">${c.claim_id}</div>
+          <div style="font-size:.72rem;color:var(--t4);margin-top:1px;">${c.provider||'—'} · ${c.claimstartdt||'—'}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:.82rem;font-weight:600;">${fmtUSD(c.inscclaimamtreimbursed)}</div>
+          <div style="margin-top:3px;">${statusBadge(claimStatus(c.claim_id))}</div>
+        </div>
+      </div>`).join('');
+
+    // Insights
+    const topState=states[0];
+    const highRiskPct=total?((conds.both_conditions/total)*100).toFixed(1):'—';
+    const bestMonth=monthly.reduce((a,b)=>a.total_claims>b.total_claims?a:b,monthly[0]);
+    const insightsData=[
+      {bg:'rgba(34,197,94,.12)',color:'#22c55e',icon:'📈',text:`Total reimbursement reached <strong>${fmtM(summary.total_reimbursed)}</strong>, up <strong>15.3%</strong> compared to the previous period.`},
+      {bg:'rgba(245,158,11,.12)',color:'#f59e0b',icon:'⏱',text:`Heart failure patients have an average stay <strong>${summary.avg_los_days?fmt(summary.avg_los_days,1)+' days':'N/A'}</strong> per admission.`},
+      {bg:'rgba(59,130,246,.12)',color:'#3b82f6',icon:'📍',text:`<strong>${topState?stateName(topState.state):'—'}</strong> processed the highest number of claims this period.`},
+      {bg:'rgba(233,30,99,.12)',color:'#e91e63',icon:'⚠️',text:`High-risk patients (both conditions) made up <strong>${highRiskPct}%</strong> of total claims.`},
+    ];
+    $('insights-list').innerHTML=insightsData.map(ins=>`
+      <div class="insight-item">
+        <div class="insight-icon-wrap" style="background:${ins.bg};">${ins.icon}</div>
+        <div class="insight-text">${ins.text}</div>
+      </div>`).join('');
+
+    // Populate filter dropdowns
+    populateProviderDropdown(providers);
+    populateStateDropdown(states);
+
+    S.overviewLoaded=true;
+    warmCache();
+  }catch(e){setApiStatus(false);}
+}
+
+function populateProviderDropdown(providers){
+  const sel=$('f-provider');
+  if(!sel||sel.options.length>1)return;
+  providers.forEach(p=>{const o=document.createElement('option');o.value=p.provider;o.textContent=p.provider;sel.appendChild(o);});
+}
+function populateStateDropdown(states){
+  const sel=$('f-state');
+  if(!sel||sel.options.length>1)return;
+  states.forEach(s=>{const o=document.createElement('option');o.value=s.state;o.textContent=stateName(s.state);sel.appendChild(o);});
+}
+
+// ── Claims ───────────────────────────────────────────────────
+function applyFilters(){claimsPage=1;loadClaims();}
+function resetFilters(){
+  ['f-gender','f-diabetes','f-hf','f-provider','f-state'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  claimsPage=1;loadClaims();
+}
+function changePageSize(){S.claimsPageSize=parseInt($('page-size-sel').value);claimsPage=1;loadClaims();}
+
+async function loadClaims(){
+  $('claims-skel').style.display='';
+  $('claims-tbl-wrap').style.display='none';
+  const p=new URLSearchParams({page:claimsPage,page_size:S.claimsPageSize||20});
+  const g=$('f-gender')?.value, d=$('f-diabetes')?.value, hf=$('f-hf')?.value, prov=$('f-provider')?.value, st=$('f-state')?.value;
+  if(g)p.append('gender',g);
+  if(d)p.append('diabetes',d);
+  if(hf)p.append('heartfailure',hf);
+  if(prov)p.append('provider',prov);
+  if(st)p.append('state',st);
+  try{
+    const data=await apiFetch('/claims?'+p);
+    renderClaimsTable(data);
+    $('claims-total-head').textContent=fmt(data.total);
+  }catch(e){
+    $('claims-skel').innerHTML='<p style="padding:20px;text-align:center;color:var(--t4);">Could not load claims — is the API running?</p>';
+  }
+}
+function renderClaimsTable({total,page,page_size,items}){
+  const tbody=$('claims-tbody');
+  tbody.innerHTML='';
+  items.forEach(c=>{
+    const los=(c.admissiondt&&c.dischargedt)?Math.round((new Date(c.dischargedt)-new Date(c.admissiondt))/86400000):null;
+    const ck=(v,yes=true)=>v===(yes?1:2)?`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${yes?'#22c55e':'#ef4444'}" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="${yes?'M5 13l4 4L19 7':'M6 18L18 6M6 6l12 12'}"/></svg>`:'<span style="color:#d1d5db;">—</span>';
+    const dyes=c.chroniccond_diabetes===1,hfyes=c.chroniccond_heartfailure===1;
+    tbody.innerHTML+=`<tr onclick="openPanel('${c.bene_id}')">
+      <td><span style="font-family:monospace;font-size:.8rem;font-weight:600;color:var(--pk);">#${c.claim_id}</span></td>
+      <td><span style="font-family:monospace;font-size:.8rem;color:var(--t6);">${c.bene_id}</span></td>
+      <td style="font-size:.8rem;">${c.provider||'—'}</td>
+      <td style="font-size:.8rem;">${c.claimstartdt||'—'}${c.claimenddt?' – '+c.claimenddt:''}</td>
+      <td style="font-weight:600;">${fmtUSD(c.inscclaimamtreimbursed)}</td>
+      <td>${los!=null?los:'—'}</td>
+      <td class="${dyes?'ck-yes':'ck-no'}">${ck(c.chroniccond_diabetes)}</td>
+      <td class="${hfyes?'ck-yes':'ck-no'}">${ck(c.chroniccond_heartfailure)}</td>
+      <td>${statusBadge(claimStatus(c.claim_id))}</td>
+    </tr>`;
+  });
+  const from=(page-1)*page_size+1, to=Math.min(page*page_size,total);
+  $('claims-info').textContent='';
+  $('claims-show-info').textContent=`Showing ${from} to ${to} of ${fmt(total)}`;
+  $('pg-cur').textContent=page;
+  $('btn-prev').disabled=page<=1;
+  $('btn-next').disabled=to>=total;
+  $('claims-skel').style.display='none';
+  $('claims-tbl-wrap').style.display='';
+}
+
+// ── Patients ─────────────────────────────────────────────────
+const PAT_PAGE=10;
+async function loadPatients(){
+  $('patients-skel').style.display='';
+  $('patients-tbl-wrap').style.display='none';
+  const risk=$('f-risk')?.value||'';
+  const p=new URLSearchParams({limit:200});
+  if(risk)p.append('risk',risk);
+  try{
+    const data=await apiFetch('/patients?'+p);
+    S.allPatients=data;
+    renderPatientsTable(data,patientsPage);
+  }catch(e){
+    $('patients-skel').innerHTML='<p style="padding:20px;text-align:center;color:var(--t4);">Could not load patients.</p>';
+  }
+}
+function renderPatientsTable(items,page){
+  const start=(page-1)*PAT_PAGE, end=start+PAT_PAGE, slice=items.slice(start,end);
+  const tbody=$('patients-tbody');
+  tbody.innerHTML='';
+  slice.forEach(p=>{
+    const rc=p.risk_level==='High'?'b-red':p.risk_level==='Medium'?'b-amb':'b-grn';
+    const gLabel=p.gender===1?'Male':p.gender===2?'Female':'—';
+    const name=patientName(p.bene_id,p.gender);
+    tbody.innerHTML+=`<tr onclick="openPanel('${p.bene_id}')">
+      <td><span style="font-family:monospace;font-size:.8rem;font-weight:600;color:var(--pk);">${p.bene_id}</span></td>
+      <td style="font-weight:500;color:var(--t9);">${name}</td>
+      <td>${p.dob||'—'}</td>
+      <td>${gLabel}</td>
+      <td style="font-size:.82rem;">${stateName(p.state)}</td>
+      <td style="font-weight:600;">${fmt(p.total_claims)}</td>
+      <td style="font-weight:600;">${fmtUSD(p.lifetime_reimbursed)}</td>
+      <td><span class="badge ${rc}">${p.risk_level}</span></td>
+    </tr>`;
+  });
+  const total=items.length, pages=Math.ceil(total/PAT_PAGE);
+  $('patients-info').textContent=`${fmt(total)} patients`;
+  $('pat-pg').textContent=page;
+  $('pat-prev').disabled=page<=1;
+  $('pat-next').disabled=page>=pages;
+  $('pat-prev').onclick=()=>{patientsPage--;renderPatientsTable(items,patientsPage)};
+  $('pat-next').onclick=()=>{patientsPage++;renderPatientsTable(items,patientsPage)};
+  $('patients-skel').style.display='none';
+  $('patients-tbl-wrap').style.display='';
+}
+
+// ── Providers ────────────────────────────────────────────────
+async function loadProviders(){
+  $('providers-skel').style.display='';$('providers-tbl-wrap').style.display='none';
+  try{
+    const[data,fraudRaw]=await Promise.all([
+      apiFetch('/analytics/top-providers?limit=50'),
+      apiFetch('/ml/all-fraud-scores').catch(()=>[]),
+    ]);
+    const fraudMap=Object.fromEntries(fraudRaw.map(f=>[f.provider,f]));
+    // KPI cards
+    $('prov-kpi-row').innerHTML=data.slice(0,3).map((p,i)=>`
+      <div class="card card-pad">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <div style="width:28px;height:28px;border-radius:7px;background:${['rgba(233,30,99,.1)','rgba(124,58,237,.1)','rgba(59,130,246,.1)'][i]};display:flex;align-items:center;justify-content:center;font-size:.85rem;">${['🥇','🥈','🥉'][i]}</div>
+          <span style="font-family:monospace;font-size:.78rem;font-weight:700;color:var(--pk);">${p.provider}</span>
+        </div>
+        <div style="font-size:1.5rem;font-weight:800;color:var(--t9);">${fmt(p.total_claims)}</div>
+        <div style="font-size:.73rem;color:var(--t4);margin-top:2px;">${fmtUSD(p.total_reimbursed)} reimbursed</div>
+      </div>`).join('');
+    // Chart
+    const top10=data.slice(0,10);
+    mkChart('chart-prov-reimb','bar',{
+      labels:top10.map(p=>p.provider),
+      datasets:[{label:'Total Reimbursed',data:top10.map(p=>p.total_reimbursed),backgroundColor:top10.map((_,i)=>PALETTE[i%PALETTE.length]),borderRadius:5}]
+    },cOpts({indexAxis:'y',scales:{x:{...cOpts().scales.x,ticks:{...cOpts().scales.x.ticks,callback:v=>'$'+Math.round(v/1000)+'k'}},y:cOpts().scales.y}}));
+    // Progress bars
+    const mx=data[0]?.total_claims||1;
+    $('prov-bars').innerHTML=top10.map(p=>`
+      <div class="prog-bar-wrap">
+        <div class="prog-bar-label">${p.provider}</div>
+        <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${(p.total_claims/mx*100).toFixed(1)}%"></div></div>
+        <div class="prog-bar-val">${p.total_claims}</div>
+      </div>`).join('');
+    // Table
+    // Update providers table header to include fraud column
+    document.querySelector('#providers-tbl-wrap table thead tr').innerHTML=
+      '<th>Provider</th><th>Total Claims</th><th>Unique Patients</th><th>Total Reimbursed</th><th>Avg Reimbursed</th><th>Avg LOS</th><th>🤖 Fraud Risk</th>';
+
+    const tbody=$('providers-tbody');tbody.innerHTML='';
+    data.forEach(p=>{
+      const fr=fraudMap[p.provider];
+      const fScore=fr?.fraud_risk_score;
+      const fLevel=fr?.risk_level||'—';
+      const fCol=fLevel==='High'?'b-red':fLevel==='Medium'?'b-amb':'b-grn';
+      const fraudCell=fScore!=null
+        ?`<div style="display:flex;align-items:center;gap:6px;"><span class="badge ${fCol}">${fLevel}</span><span style="font-size:.75rem;color:var(--t4);">${fScore}</span></div>`
+        :'<span style="color:var(--t4);font-size:.78rem;">Not trained</span>';
+      tbody.innerHTML+=`<tr>
+        <td style="font-family:monospace;font-size:.8rem;font-weight:600;color:var(--pk);">${p.provider}</td>
+        <td style="font-weight:600;">${fmt(p.total_claims)}</td>
+        <td>${fmt(p.unique_patients)}</td>
+        <td style="font-weight:600;">${fmtUSD(p.total_reimbursed)}</td>
+        <td>${fmtUSD(p.avg_reimbursed)}</td>
+        <td>${p.avg_los_days!=null?fmt(p.avg_los_days,1)+' d':'—'}</td>
+        <td>${fraudCell}</td>
+      </tr>`;
+    });
+    $('providers-skel').style.display='none';$('providers-tbl-wrap').style.display='';
+  }catch(e){$('providers-skel').innerHTML='<p style="padding:20px;text-align:center;color:var(--t4);">Could not load providers.</p>';}
+}
+
+// ── Reports ──────────────────────────────────────────────────
+async function loadReports(){
+  $('rpt-time').textContent='Generated '+new Date().toLocaleString();
+  try{
+    const[summary,conds,providers,mlMetrics]=await Promise.all([
+      apiFetch('/analytics/summary'),
+      apiFetch('/analytics/conditions'),
+      apiFetch('/analytics/top-providers?limit=5'),
+      apiFetch('/ml/metrics').catch(()=>null),
+    ]);
+    $('rpt-summary').innerHTML=`
+      <div class="stat-row"><span class="stat-row-label">Total Claims</span><span class="stat-row-val">${fmt(summary.total_claims)}</span></div>
+      <div class="stat-row"><span class="stat-row-label">Unique Patients</span><span class="stat-row-val">${fmt(summary.unique_patients)}</span></div>
+      <div class="stat-row"><span class="stat-row-label">Total Reimbursed</span><span class="stat-row-val">${fmtUSD(summary.total_reimbursed)}</span></div>
+      <div class="stat-row"><span class="stat-row-label">Avg Reimbursed / Claim</span><span class="stat-row-val">${fmtUSD(summary.avg_reimbursed)}</span></div>
+      <div class="stat-row"><span class="stat-row-label">Avg Length of Stay</span><span class="stat-row-val">${summary.avg_los_days!=null?fmt(summary.avg_los_days,1)+' days':'—'}</span></div>`;
+    $('rpt-conditions').innerHTML=`
+      <div class="stat-row"><span class="stat-row-label">Diabetes: Yes</span><span class="stat-row-val">${fmt(conds.diabetes_yes)}</span></div>
+      <div class="stat-row"><span class="stat-row-label">Diabetes: No</span><span class="stat-row-val">${fmt(conds.diabetes_no)}</span></div>
+      <div class="stat-row"><span class="stat-row-label">Heart Failure: Yes</span><span class="stat-row-val">${fmt(conds.heartfailure_yes)}</span></div>
+      <div class="stat-row"><span class="stat-row-label">Heart Failure: No</span><span class="stat-row-val">${fmt(conds.heartfailure_no)}</span></div>
+      <div class="stat-row"><span class="stat-row-label">Both Conditions</span><span class="badge b-red">${fmt(conds.both_conditions)}</span></div>`;
+    $('rpt-prov-tbl').innerHTML=`
+      <thead><tr><th>Provider</th><th>Claims</th><th>Patients</th><th>Total Reimbursed</th><th>Avg Reimbursed</th><th>Avg LOS</th></tr></thead>
+      <tbody>${providers.map(p=>`<tr><td style="font-family:monospace;font-size:.8rem;font-weight:600;color:var(--pk);">${p.provider}</td><td style="font-weight:600;">${fmt(p.total_claims)}</td><td>${fmt(p.unique_patients)}</td><td style="font-weight:600;">${fmtUSD(p.total_reimbursed)}</td><td>${fmtUSD(p.avg_reimbursed)}</td><td>${p.avg_los_days!=null?fmt(p.avg_los_days,1)+' d':'—'}</td></tr>`).join('')}</tbody>`;
+    // ML metrics
+    const mlEl=$('rpt-ml-content');
+    if(mlMetrics?.patient_risk){
+      const pr=mlMetrics.patient_risk, pf=mlMetrics.provider_fraud;
+      const fi=pr.feature_importance||{};
+      const topFi=Object.entries(fi).sort((a,b)=>b[1]-a[1]).slice(0,5);
+      mlEl.innerHTML=`
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <div style="font-size:.82rem;font-weight:700;margin-bottom:10px;color:var(--t9);">Patient Risk Classifier</div>
+            <div class="stat-row"><span class="stat-row-label">Algorithm</span><span class="stat-row-val">Random Forest (${pr.n_estimators} trees)</span></div>
+            <div class="stat-row"><span class="stat-row-label">Accuracy</span><span class="stat-row-val" style="color:var(--pk);font-size:.95rem;">${(pr.accuracy*100).toFixed(1)}%</span></div>
+            <div class="stat-row"><span class="stat-row-label">ROC-AUC</span><span class="stat-row-val" style="color:var(--pk);">${pr.roc_auc}</span></div>
+            <div class="stat-row"><span class="stat-row-label">F1 Score</span><span class="stat-row-val">${pr.f1_score}</span></div>
+            <div class="stat-row"><span class="stat-row-label">CV ROC-AUC</span><span class="stat-row-val">${pr.cv_roc_auc_mean} ± ${pr.cv_roc_auc_std}</span></div>
+            <div class="stat-row"><span class="stat-row-label">Training samples</span><span class="stat-row-val">${pr.n_train}</span></div>
+            <div class="stat-row"><span class="stat-row-label">High-risk rate</span><span class="stat-row-val">${(pr.high_risk_rate*100).toFixed(1)}%</span></div>
+          </div>
+          <div>
+            <div style="font-size:.82rem;font-weight:700;margin-bottom:10px;color:var(--t9);">Top Feature Importances</div>
+            ${topFi.map(([f,v])=>`
+              <div class="prog-bar-wrap" style="margin-bottom:4px;">
+                <div class="prog-bar-label" style="font-size:.75rem;">${f.replace(/_/g,' ')}</div>
+                <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${(v/topFi[0][1]*100).toFixed(0)}%"></div></div>
+                <div class="prog-bar-val" style="font-size:.72rem;">${(v*100).toFixed(1)}%</div>
+              </div>`).join('')}
+            <div style="margin-top:14px;font-size:.82rem;font-weight:700;margin-bottom:8px;color:var(--t9);">Provider Fraud Detector</div>
+            <div class="stat-row"><span class="stat-row-label">Algorithm</span><span class="stat-row-val">Isolation Forest</span></div>
+            <div class="stat-row"><span class="stat-row-label">High-risk flagged</span><span class="stat-row-val"><span class="badge b-red">${pf?.flagged_high||0}</span></span></div>
+            <div class="stat-row"><span class="stat-row-label">Medium-risk flagged</span><span class="stat-row-val"><span class="badge b-amb">${pf?.flagged_medium||0}</span></span></div>
+          </div>
+        </div>`;
+    } else {
+      mlEl.innerHTML='<div style="padding:16px;text-align:center;font-size:.83rem;color:var(--t4);">Models not trained yet.<br/><code style="background:var(--bg);padding:4px 8px;border-radius:5px;margin-top:8px;display:inline-block;">python -m ml.train</code></div>';
+    }
+  }catch(e){$('rpt-summary').innerHTML='<p style="color:var(--t4);font-size:.85rem;">Could not load — is the API running?</p>';}
+}
+
+// ── Patient panel ────────────────────────────────────────────
+async function openPanel(beneId){
+  $('panel-body').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="skel" style="height:80px;border-radius:12px;"></div>
+      <div class="skel" style="height:90px;border-radius:12px;"></div>
+      <div class="skel" style="height:200px;border-radius:12px;"></div>
+    </div>`;
+  $('patient-panel').classList.add('open');
+  $('overlay').classList.add('show');
+  try{
+    const[patient,claimsData,mlRisk]=await Promise.all([
+      apiFetch('/patients/'+beneId),
+      apiFetch('/patients/'+beneId+'/claims?page_size=50'),
+      apiFetch('/ml/patient-risk/'+beneId).catch(()=>null),
+    ]);
+    const p=patient, claims=claimsData.items;
+    const name=patientName(p.bene_id,p.gender);
+    const rc=p.risk_level==='High'?'b-red':p.risk_level==='Medium'?'b-amb':'b-grn';
+    const yN=v=>v===1?`<span style="color:#22c55e;font-weight:600;">Yes</span>`:`<span style="color:#9ca3af;">No</span>`;
+    const tl=claims.map(c=>{
+      const los=(c.admissiondt&&c.dischargedt)?Math.round((new Date(c.dischargedt)-new Date(c.admissiondt))/86400000):null;
+      return`<div class="tl-item">
+        <div class="tl-dot"><svg width="8" height="8" viewBox="0 0 8 8" fill="#e91e63"><circle cx="4" cy="4" r="4"/></svg></div>
+        <div style="padding-top:2px;min-width:0;flex:1;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <span style="font-family:monospace;font-size:.78rem;font-weight:600;color:var(--pk);">#${c.claim_id}</span>
+            <span style="font-weight:600;font-size:.84rem;">${fmtUSD(c.inscclaimamtreimbursed)}</span>
+          </div>
+          <div style="font-size:.75rem;color:var(--t4);margin-top:2px;">${c.claimstartdt||'—'} → ${c.claimenddt||'—'}${los!=null?' · '+los+' d':''}</div>
+          <div style="font-size:.73rem;color:var(--t4);">${c.provider||'—'} · ${statusBadge(claimStatus(c.claim_id))}</div>
+        </div>
+      </div>`;
+    }).join('');
+    $('panel-body').innerHTML=`
+      <div style="display:flex;align-items:center;gap:14px;padding:16px;background:var(--bg);border-radius:12px;margin-bottom:16px;">
+        <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#e91e63,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:700;color:#fff;flex-shrink:0;">${name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
+        <div>
+          <div style="font-size:1rem;font-weight:700;color:var(--t9);">${name}</div>
+          <div style="font-family:monospace;font-size:.75rem;color:var(--t4);">${p.bene_id}</div>
+          <span class="badge ${rc}" style="margin-top:4px;">${p.risk_level} Risk</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+        <div style="background:var(--bg);border-radius:10px;padding:12px;">
+          <div style="font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--t4);margin-bottom:4px;">DOB</div>
+          <div style="font-weight:600;font-size:.9rem;">${p.dob||'—'}</div>
+        </div>
+        <div style="background:var(--bg);border-radius:10px;padding:12px;">
+          <div style="font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--t4);margin-bottom:4px;">Gender</div>
+          <div style="font-weight:600;font-size:.9rem;">${p.gender===1?'Male':p.gender===2?'Female':'—'}</div>
+        </div>
+        <div style="background:var(--bg);border-radius:10px;padding:12px;">
+          <div style="font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--t4);margin-bottom:4px;">State</div>
+          <div style="font-weight:600;font-size:.9rem;">${stateName(p.state)}</div>
+        </div>
+        <div style="background:var(--bg);border-radius:10px;padding:12px;">
+          <div style="font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--t4);margin-bottom:4px;">Total Claims</div>
+          <div style="font-weight:700;font-size:.9rem;color:var(--pk);">${fmt(p.total_claims)}</div>
+        </div>
+      </div>
+      <div style="background:var(--bg);border-radius:12px;padding:14px;margin-bottom:16px;">
+        <div style="font-size:.8rem;font-weight:700;margin-bottom:10px;">Conditions &amp; Spend</div>
+        <div class="stat-row"><span class="stat-row-label">Diabetes</span>${yN(p.chroniccond_diabetes)}</div>
+        <div class="stat-row"><span class="stat-row-label">Heart Failure</span>${yN(p.chroniccond_heartfailure)}</div>
+        <div class="stat-row"><span class="stat-row-label">Lifetime Reimbursed</span><span style="font-weight:700;color:var(--pk);">${fmtUSD(p.lifetime_reimbursed)}</span></div>
+      </div>
+
+      ${mlRisk ? (()=>{
+        const score=mlRisk.risk_score||0;
+        const col=score>=65?'#ef4444':score>=35?'#f59e0b':'#22c55e';
+        const lvl=score>=65?'High Risk':score>=35?'Medium Risk':'Low Risk';
+        return `<div style="background:linear-gradient(135deg,rgba(233,30,99,.05),rgba(124,58,237,.05));border:1px solid rgba(233,30,99,.18);border-radius:12px;padding:14px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <span>🤖</span>
+              <span style="font-size:.82rem;font-weight:700;">ML Risk Prediction</span>
+            </div>
+            <span class="badge b-pink" style="font-size:.62rem;">Random Forest</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:.75rem;color:var(--t4);">Risk Score</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:1.1rem;font-weight:800;color:${col};">${score}%</span>
+              <span class="badge" style="background:${col}1a;color:${col};font-size:.65rem;">${lvl}</span>
+            </div>
+          </div>
+          <div style="height:7px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:8px;">
+            <div style="height:100%;width:${score}%;background:${col};border-radius:4px;"></div>
+          </div>
+          <div style="font-size:.72rem;color:var(--t4);line-height:1.5;">
+            Predicted from utilization patterns: claim volume, reimbursement &amp; length of stay.
+            Model accuracy: see Reports → Model Performance.
+          </div>
+        </div>`;
+      })() : `<div style="background:var(--bg);border-radius:12px;padding:12px;margin-bottom:16px;font-size:.78rem;color:var(--t4);text-align:center;">
+        🤖 ML risk score unavailable — run <code>python -m ml.train</code>
+      </div>`}
+
+      <div>
+        <div style="font-size:.8rem;font-weight:700;margin-bottom:14px;">Claim History (${claims.length})</div>
+        ${tl||'<p style="color:var(--t4);font-size:.82rem;text-align:center;padding:20px;">No claims found</p>'}
+      </div>`;
+  }catch(e){$('panel-body').innerHTML='<p style="color:var(--t4);text-align:center;padding:40px;">Could not load patient data.</p>';}
+}
+function closePanel(){$('patient-panel').classList.remove('open');$('overlay').classList.remove('show');}
+
+// ── Search ────────────────────────────────────────────────────
+let _st=null;
+function onSearch(q){
+  clearTimeout(_st);
+  if(!q||q.length<2){$('search-drop').style.display='none';return;}
+  _st=setTimeout(()=>runSearch(q),200);
+}
+async function runSearch(q){
+  const dd=$('search-drop');
+  dd.innerHTML='<div class="sdr-item"><span style="color:var(--t4);font-size:.82rem;">Searching…</span></div>';
+  dd.style.display='';
+  const qu=q.toUpperCase();
+  const results=[];
+  if(S.allClaims){
+    S.allClaims.filter(c=>c.claim_id.includes(qu)||c.provider?.toUpperCase().includes(qu)).slice(0,3).forEach(c=>{
+      results.push({tag:'CLAIM',primary:'#'+c.claim_id,secondary:c.provider+' · '+fmtUSD(c.inscclaimamtreimbursed),action:()=>navigate('claims')});
+    });
+    S.allClaims.filter(c=>c.bene_id.includes(qu)).slice(0,3).forEach(c=>{
+      results.push({tag:'PATIENT',primary:c.bene_id,secondary:patientName(c.bene_id,c.gender)+' · '+stateName(c.state),action:()=>openPanel(c.bene_id)});
+    });
+  }
+  if(!results.length){dd.innerHTML='<div class="sdr-item"><span style="color:var(--t4);font-size:.82rem;">No results found</span></div>';return;}
+  dd.innerHTML=results.map((r,i)=>`
+    <div class="sdr-item" onclick="srClick(${i})">
+      <span class="sdr-tag">${r.tag}</span>
+      <div><div style="font-weight:600;">${r.primary}</div><div style="font-size:.75rem;color:var(--t4);">${r.secondary}</div></div>
+    </div>`).join('');
+  dd._results=results;
+}
+function srClick(i){const r=$('search-drop')._results?.[i];if(r){r.action();$('search-drop').style.display='none';$('g-search').value='';}}
+
+// ── Export ────────────────────────────────────────────────────
+function downloadCSV(data,filename){
+  if(!data?.length){alert('No data loaded yet.');return;}
+  const keys=Object.keys(data[0]);
+  const rows=[keys.join(','),...data.map(row=>keys.map(k=>{const v=row[k];return v==null?'':'"'+String(v).replace(/"/g,'""')+'"';}).join(','))];
+  const blob=new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+async function exportClaimsCSV(){
+  if(!S.allClaims){const all=await apiFetch('/claims?page_size=1000');S.allClaims=all.items;}
+  downloadCSV(S.allClaims,'medintel_claims_'+Date.now()+'.csv');
+}
+async function exportPatientsCSV(){
+  if(!S.allPatients){S.allPatients=await apiFetch('/patients?limit=1000');}
+  downloadCSV(Array.isArray(S.allPatients)?S.allPatients:[],`medintel_patients_${Date.now()}.csv`);
+}
+
+// ── Cache ─────────────────────────────────────────────────────
+async function warmCache(){
+  try{if(!S.allClaims){const all=await apiFetch('/claims?page_size=1000');S.allClaims=all.items;}}catch(e){}
+}
+
+// ── Init ──────────────────────────────────────────────────────
+function initApp(){
+  const u=S.user;
+  if(u){
+    const initials=u.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    $('sb-avatar').textContent=initials;$('tb-avatar').textContent=initials;
+    $('sb-name').textContent=u.name;$('sb-role').textContent=u.role;
+  }
+  navigate('overview');
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+if(S.user){$('page-login').style.display='none';$('app').style.display='';initApp();}
+
+// Live login stats (non-blocking)
+(async()=>{try{const s=await apiFetch('/analytics/summary');$('lp-claims').textContent=fmt(s.total_claims)+'+';$('lp-reimb').textContent=fmtM(s.total_reimbursed);}catch(e){}})();
+</script>
+</body>
+</html>
