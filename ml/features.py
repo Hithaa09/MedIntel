@@ -19,12 +19,11 @@ PATIENT_FEATURES = [
     "gender",
     "state",
     "claim_count",
-    "total_reimbursed",
-    "avg_reimbursed",
-    "max_reimbursed",
     "avg_los",
     "max_los",
     "unique_providers",
+    "has_diabetes",
+    "has_heartfailure",
 ]
 
 PROVIDER_FEATURES = [
@@ -91,12 +90,17 @@ def build_patient_features(df: pd.DataFrame) -> pd.DataFrame:
     median_age = agg["age"].median()
     agg["age"] = agg["age"].clip(0, 120).fillna(median_age)
 
-    # Target: both chronic conditions present (high clinical risk proxy)
-    agg["high_risk"] = (
-        (agg["chroniccond_diabetes"] == 1) & (agg["chroniccond_heartfailure"] == 1)
-    ).astype(int)
+    # Binary condition flags as features (not used as sole target — avoids leakage)
+    agg["has_diabetes"]    = (agg["chroniccond_diabetes"]    == 1).astype(float)
+    agg["has_heartfailure"] = (agg["chroniccond_heartfailure"] == 1).astype(float)
 
-    return agg[["BeneID"] + PATIENT_FEATURES + ["high_risk"]].fillna(0)
+    # Target: top-quartile spender (high-cost patient)
+    # Predicting future cost from demographic + utilisation features is
+    # a legitimate, learnable clinical ML problem with no label leakage.
+    q75 = agg["total_reimbursed"].quantile(0.75)
+    agg["high_spender"] = (agg["total_reimbursed"] >= q75).astype(int)
+
+    return agg[["BeneID", "total_reimbursed"] + PATIENT_FEATURES + ["high_spender"]].fillna(0)
 
 
 # ── Provider-level features ──────────────────────────────────────────────────

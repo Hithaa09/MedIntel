@@ -1,0 +1,84 @@
+{
+  "patient_risk": {
+    "model": "RandomForestClassifier",
+    "n_estimators": 300,
+    "accuracy": 0.7538,
+    "f1_score": 0.7258,
+    "roc_auc": 0.6813,
+    "cv_roc_auc_mean": 0.6413,
+    "cv_roc_auc_std": 0.04,
+    "n_train": 794,
+    "n_test": 199,
+    "high_spender_rate": 0.2518,
+    "feature_importance": {
+      "age": 0.2657,
+      "gender": 0.0438,
+      "state": 0.2567,
+      "claim_count": 0.0079,
+      "avg_los": 0.1681,
+      "max_los": 0.1724,
+      "unique_providers": 0.0005,
+      "has_diabetes": 0.0358,
+      "has_heartfailure": 0.0492
+    },
+    "confusion_matrix": [
+      [
+        136,
+        13
+      ],
+      [
+        36,
+        14
+      ]
+    ],
+    "classification_report": {
+      "0": {
+        "precision": 0.7906976744186046,
+        "recall": 0.912751677852349,
+        "f1-score": 0.8473520249221184,
+        "support": 149.0
+      },
+      "1": {
+        "precision": 0.5185185185185185,
+        "recall": 0.28,
+        "f1-score": 0.36363636363636365,
+        "support": 50.0
+      },
+      "accuracy": 0.7537688442211056,
+      "macro avg": {
+        "precision": 0.6546080964685616,
+        "recall": 0.5963758389261745,
+        "f1-score": 0.605494194279241,
+        "support": 199.0
+      },
+      "weighted avg": {
+        "precision": 0.7223109518306432,
+        "recall": 0.7537688442211056,
+        "f1-score": 0.7258154266091146,
+        "support": 199.0
+      }
+    }
+  },
+  "provider_fraud": {
+    "model": "IsolationForest",
+    "n_estimators": 300,
+    "contamination": 0.12,
+    "n_providers": 544,
+    "flagged_high": 20,
+    "flagged_medium": 75,
+    "avg_fraud_score": 23.19,
+    "features": [
+      "total_claims",
+      "unique_patients",
+      "claims_per_patient",
+      "avg_reimbursed",
+      "max_reimbursed",
+      "std_reimbursed",
+      "avg_los",
+      "max_los",
+      "std_los",
+      "diabetes_rate",
+      "hf_rate"
+    ]
+  }
+}

@@ -56,11 +56,11 @@ def train_patient_risk(patient_df) -> dict:
     print("─" * 50)
 
     X = patient_df[PATIENT_FEATURES].values
-    y = patient_df["high_risk"].values
+    y = patient_df["high_spender"].values
 
     n_pos = y.sum()
     print(f"  Patients   : {len(X):,}")
-    print(f"  High-risk  : {n_pos:,}  ({n_pos / len(y) * 100:.1f}%)")
+    print(f"  High-cost  : {n_pos:,}  ({n_pos / len(y) * 100:.1f}%)")
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
@@ -116,7 +116,7 @@ def train_patient_risk(patient_df) -> dict:
         "cv_roc_auc_std":    round(float(cv_scores.std()), 4),
         "n_train":           int(len(X_train)),
         "n_test":            int(len(X_test)),
-        "high_risk_rate":    round(float(y.mean()), 4),
+        "high_spender_rate": round(float(y.mean()), 4),
         "feature_importance": fi,
         "confusion_matrix":  cm,
         "classification_report": rep,

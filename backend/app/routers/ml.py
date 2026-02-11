@@ -89,17 +89,29 @@ def patient_risk(bene_id: str):
     dob  = row[9]
     age  = float(2010 - dob.year) if dob else 65.0
 
+    # Also fetch chronic condition flags for features
+    cond_sql = """
+        SELECT MAX(chroniccond_diabetes), MAX(chroniccond_heartfailure)
+        FROM healthcare_claims WHERE bene_id = :bid
+    """
+    with get_conn() as conn:
+        cur2 = conn.cursor()
+        cur2.execute(cond_sql, {"bid": bene_id.upper()})
+        cond_row = cur2.fetchone()
+
+    has_diabetes    = 1.0 if (cond_row and cond_row[0] == 1) else 0.0
+    has_heartfailure = 1.0 if (cond_row and cond_row[1] == 1) else 0.0
+
     features = {
-        "claim_count":      float(row[0] or 0),
-        "total_reimbursed": float(row[1] or 0),
-        "avg_reimbursed":   float(row[2] or 0),
-        "max_reimbursed":   float(row[3] or 0),
-        "avg_los":          float(row[4] or 0),
-        "max_los":          float(row[5] or 0),
-        "unique_providers": float(row[6] or 0),
-        "gender":           float(row[7] or 1),
-        "state":            float(row[8] or 0),
-        "age":              age,
+        "claim_count":       float(row[0] or 0),
+        "avg_los":           float(row[4] or 0),
+        "max_los":           float(row[5] or 0),
+        "unique_providers":  float(row[6] or 0),
+        "gender":            float(row[7] or 1),
+        "state":             float(row[8] or 0),
+        "age":               age,
+        "has_diabetes":      has_diabetes,
+        "has_heartfailure":  has_heartfailure,
     }
 
     prob = predict_patient_risk(features)
