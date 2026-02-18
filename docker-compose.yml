@@ -1,0 +1,48 @@
+services:
+
+  # ── Oracle XE 21c ────────────────────────────────────────────
+  oracle:
+    image: gvenzl/oracle-xe:21-slim
+    container_name: medintel-oracle
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_SYS_PASS:-StrongPass1}
+      APP_USER: ${DB_USER:-APP}
+      APP_USER_PASSWORD: ${DB_PASS:-app}
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # ── FastAPI backend ───────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: medintel-api
+    environment:
+      DB_USER: ${DB_USER:-APP}
+      DB_PASS: ${DB_PASS:-app}
+      DB_DSN:  oracle:1521/XEPDB1
+      CORS_ORIGINS: "http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000"
+    ports:
+      - "8000:8000"
+    depends_on:
+      oracle:
+        condition: service_healthy
+    volumes:
+      - ./ml/models:/app/ml/models   # mount trained models
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  oracle-data:
