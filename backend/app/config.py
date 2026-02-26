@@ -1,3 +1,6 @@
+from typing import Any
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,6 +16,16 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ]
+
+    # Accept both JSON array and comma-separated string from env var:
+    #   CORS_ORIGINS=http://localhost:5500,http://localhost:3000   ← works
+    #   CORS_ORIGINS=["http://localhost:5500","http://localhost:3000"]  ← also works
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def _parse_cors(cls, v: Any) -> list[str]:
+        if isinstance(v, str):
+            return [o.strip() for o in v.split(",") if o.strip()]
+        return v
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

@@ -140,7 +140,7 @@ def patient_claims(bene_id: str, page: int = 1, page_size: int = 20):
         )
         rows = cur.fetchall()
 
-    from ..routers.claims import _row_to_claim
+    from .claims import _row_to_claim
     return ClaimPage(
         total=total, page=page, page_size=page_size,
         items=[_row_to_claim(r) for r in rows],

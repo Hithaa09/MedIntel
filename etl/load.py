@@ -1,14 +1,12 @@
 """Load: insert a cleaned DataFrame into Oracle healthcare_claims table."""
-import csv
-import os
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
 import oracledb
 import pandas as pd
 
 
-def _to_date(val) -> Optional[datetime.date]:
+def _to_date(val) -> Optional[date]:
     if pd.isna(val) or str(val).strip() in ("", "nan", "NaT"):
         return None
     try:

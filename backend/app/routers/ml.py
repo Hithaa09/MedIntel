@@ -9,7 +9,6 @@ GET /api/ml/all-fraud-scores  — all providers ranked by fraud risk
 """
 import sys
 from pathlib import Path
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 
@@ -63,18 +62,18 @@ def patient_risk(bene_id: str):
     if not models_ready():
         raise _NOT_TRAINED
 
+    # Single query fetches all needed features + condition flags
     sql = """
         SELECT
             COUNT(claim_id)                        AS claim_count,
-            SUM(inscclaimamtreimbursed)            AS total_reimbursed,
-            AVG(inscclaimamtreimbursed)            AS avg_reimbursed,
-            MAX(inscclaimamtreimbursed)            AS max_reimbursed,
             AVG(dischargedt - admissiondt)         AS avg_los,
             MAX(dischargedt - admissiondt)         AS max_los,
             COUNT(DISTINCT provider)               AS unique_providers,
             MAX(gender)                            AS gender,
             MAX(state)                             AS state,
-            MAX(dob)                               AS dob
+            MAX(dob)                               AS dob,
+            MAX(CASE WHEN chroniccond_diabetes    = 1 THEN 1 ELSE 0 END) AS has_diabetes,
+            MAX(CASE WHEN chroniccond_heartfailure = 1 THEN 1 ELSE 0 END) AS has_heartfailure
         FROM healthcare_claims
         WHERE bene_id = :bid
     """
@@ -86,32 +85,19 @@ def patient_risk(bene_id: str):
     if not row or row[0] == 0:
         raise HTTPException(status_code=404, detail=f"Patient '{bene_id}' not found")
 
-    dob  = row[9]
-    age  = float(2010 - dob.year) if dob else 65.0
-
-    # Also fetch chronic condition flags for features
-    cond_sql = """
-        SELECT MAX(chroniccond_diabetes), MAX(chroniccond_heartfailure)
-        FROM healthcare_claims WHERE bene_id = :bid
-    """
-    with get_conn() as conn:
-        cur2 = conn.cursor()
-        cur2.execute(cond_sql, {"bid": bene_id.upper()})
-        cond_row = cur2.fetchone()
-
-    has_diabetes    = 1.0 if (cond_row and cond_row[0] == 1) else 0.0
-    has_heartfailure = 1.0 if (cond_row and cond_row[1] == 1) else 0.0
+    dob = row[6]
+    age = float(2010 - dob.year) if dob else 65.0
 
     features = {
         "claim_count":       float(row[0] or 0),
-        "avg_los":           float(row[4] or 0),
-        "max_los":           float(row[5] or 0),
-        "unique_providers":  float(row[6] or 0),
-        "gender":            float(row[7] or 1),
-        "state":             float(row[8] or 0),
+        "avg_los":           float(row[1] or 0),
+        "max_los":           float(row[2] or 0),
+        "unique_providers":  float(row[3] or 0),
+        "gender":            float(row[4] or 1),
+        "state":             float(row[5] or 0),
         "age":               age,
-        "has_diabetes":      has_diabetes,
-        "has_heartfailure":  has_heartfailure,
+        "has_diabetes":      float(row[7] or 0),
+        "has_heartfailure":  float(row[8] or 0),
     }
 
     prob = predict_patient_risk(features)
@@ -148,9 +134,9 @@ def all_fraud_scores():
         raise _NOT_TRAINED
     return [
         {
-            "provider":        k,
+            "provider":         k,
             "fraud_risk_score": v,
-            "risk_level":      "High" if v >= 70 else "Medium" if v >= 40 else "Low",
+            "risk_level":       "High" if v >= 70 else "Medium" if v >= 40 else "Low",
         }
         for k, v in sorted(scores.items(), key=lambda x: -x[1])
     ]

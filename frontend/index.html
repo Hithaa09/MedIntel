@@ -926,10 +926,8 @@ const S = {
   user: JSON.parse(localStorage.getItem('mi-user') || sessionStorage.getItem('mi-user') || 'null'),
   page: 'overview',
   charts: {},
-  claimsPage: 1,
   claimsPageSize: 20,
   claimsFilters: {},
-  patientsPage: 1,
   allClaims: null,
   allPatients: null,
   overviewLoaded: false,
@@ -1033,7 +1031,7 @@ function cOpts(extra={}){
     responsive:true,maintainAspectRatio:true,
     plugins:{
       legend:{display:false},
-      tooltip:{backgroundColor:'#fff',borderColor:PALETTE[0],borderWidth:1,titleColor:S.t9||'#111827',bodyColor:'#6b7280',padding:10,cornerRadius:8,boxShadow:'0 4px 12px rgba(0,0,0,.1)'}
+      tooltip:{backgroundColor:'#fff',borderColor:PALETTE[0],borderWidth:1,titleColor:'#111827',bodyColor:'#6b7280',padding:10,cornerRadius:8}
     },
     scales:{
       x:{grid:{color:'rgba(0,0,0,.04)',drawBorder:false},ticks:{color:'#9ca3af',font:{size:11}}},
@@ -1182,6 +1180,18 @@ function populateStateDropdown(states){
   states.forEach(s=>{const o=document.createElement('option');o.value=s.state;o.textContent=stateName(s.state);sel.appendChild(o);});
 }
 
+// Populate filter dropdowns independently of whichever page loads first
+async function initFilterDropdowns(){
+  try{
+    const[providers,states]=await Promise.all([
+      apiFetch('/analytics/top-providers?limit=50'),
+      apiFetch('/analytics/by-state'),
+    ]);
+    populateProviderDropdown(providers);
+    populateStateDropdown(states);
+  }catch(e){ /* non-critical, silently ignore */ }
+}
+
 // ── Claims ───────────────────────────────────────────────────
 function applyFilters(){claimsPage=1;loadClaims();}
 function resetFilters(){
@@ -1240,6 +1250,7 @@ function renderClaimsTable({total,page,page_size,items}){
 // ── Patients ─────────────────────────────────────────────────
 const PAT_PAGE=10;
 async function loadPatients(){
+  patientsPage=1;  // reset to first page whenever filter changes
   $('patients-skel').style.display='';
   $('patients-tbl-wrap').style.display='none';
   const risk=$('f-risk')?.value||'';
@@ -1560,7 +1571,7 @@ async function exportClaimsCSV(){
 }
 async function exportPatientsCSV(){
   if(!S.allPatients){S.allPatients=await apiFetch('/patients?limit=1000');}
-  downloadCSV(Array.isArray(S.allPatients)?S.allPatients:[],`medintel_patients_${Date.now()}.csv`);
+  downloadCSV(S.allPatients??[],`medintel_patients_${Date.now()}.csv`);
 }
 
 // ── Cache ─────────────────────────────────────────────────────
@@ -1577,6 +1588,7 @@ function initApp(){
     $('sb-name').textContent=u.name;$('sb-role').textContent=u.role;
   }
   navigate('overview');
+  initFilterDropdowns();  // pre-populate filter dropdowns in background
 }
 
 // ── Boot ──────────────────────────────────────────────────────

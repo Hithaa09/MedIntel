@@ -56,7 +56,7 @@ def check_connection() -> bool:
 def run(skip_load: bool = False) -> None:
     t0 = time.time()
     print("=" * 60)
-    print("Healthcare Claims ETL Pipeline")
+    print("MedIntel — ETL Pipeline")
     print("=" * 60)
 
     # Step 1 – Extract

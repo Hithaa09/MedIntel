@@ -63,8 +63,9 @@ def load_cleaned_data() -> pd.DataFrame:
 def build_patient_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     One row per patient.
-    Target: high_risk = 1 when patient has BOTH chronic conditions.
-    Features: utilisation patterns only (no condition flags) — avoids leakage.
+    Target: high_spender = 1 when patient's total reimbursement >= 75th percentile.
+    Features: demographics + utilisation patterns + chronic condition flags.
+    No leakage: total_reimbursed is only used to compute the target, not as an input feature.
     """
 
     def _mode(s):

@@ -63,11 +63,11 @@ def get_metrics() -> dict:
 
 def predict_patient_risk(features: dict) -> Optional[float]:
     """
-    Returns risk probability [0.0, 1.0] or None if model unavailable.
+    Returns high-cost risk probability [0.0, 1.0] or None if model unavailable.
 
-    features keys must match ml.features.PATIENT_FEATURES:
-        age, gender, state, claim_count, total_reimbursed,
-        avg_reimbursed, max_reimbursed, avg_los, max_los, unique_providers
+    Expected feature keys (must match ml.features.PATIENT_FEATURES):
+        age, gender, state, claim_count, avg_los, max_los,
+        unique_providers, has_diabetes, has_heartfailure
     """
     _load()
     if _patient_model is None:
