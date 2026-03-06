@@ -1,10 +1,11 @@
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from ..auth import get_current_user
 from ..database import get_conn
 from ..schemas import Claim, ClaimPage
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 _SELECT = """
     SELECT id, bene_id, dob, gender, race, state,

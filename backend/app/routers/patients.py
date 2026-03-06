@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from ..auth import get_current_user
 from ..database import get_conn
 from ..schemas import PatientSummary, Claim, ClaimPage
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("", response_model=list[PatientSummary], summary="List patients with risk scores")

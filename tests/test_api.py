@@ -4,6 +4,75 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 
+# ── Auth ──────────────────────────────────────────────────────────────────────
+
+def test_login_valid_credentials():
+    """Login with demo credentials returns a JWT token."""
+    from fastapi.testclient import TestClient
+    with patch("backend.app.database.init_pool"), \
+         patch("backend.app.database.close_pool"):
+        from backend.app.main import app
+        with TestClient(app) as client:
+            resp = client.post("/api/auth/login", json={
+                "email": "demo@medintel.io",
+                "password": "demo1234",
+            })
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "access_token" in body
+    assert body["token_type"] == "bearer"
+    assert body["user"]["email"] == "demo@medintel.io"
+    assert body["user"]["role"] == "Analyst"
+
+
+def test_login_invalid_credentials():
+    """Wrong password returns 401."""
+    from fastapi.testclient import TestClient
+    with patch("backend.app.database.init_pool"), \
+         patch("backend.app.database.close_pool"):
+        from backend.app.main import app
+        with TestClient(app) as client:
+            resp = client.post("/api/auth/login", json={
+                "email": "demo@medintel.io",
+                "password": "wrongpassword",
+            })
+    assert resp.status_code == 401
+
+
+def test_me_with_valid_token(api_client):
+    """/auth/me returns the authenticated user's profile."""
+    resp = api_client.get("/api/auth/me")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "email" in body
+    assert "role" in body
+
+
+def test_protected_route_without_token():
+    """Accessing a protected route without a token returns 401."""
+    from fastapi.testclient import TestClient
+    with patch("backend.app.database.init_pool"), \
+         patch("backend.app.database.close_pool"):
+        from backend.app.main import app
+        with TestClient(app, raise_server_exceptions=False) as client:
+            resp = client.get("/api/claims")
+    assert resp.status_code == 401
+
+
+def test_protected_route_with_bad_token():
+    """A tampered / invalid token returns 401."""
+    from fastapi.testclient import TestClient
+    with patch("backend.app.database.init_pool"), \
+         patch("backend.app.database.close_pool"):
+        from backend.app.main import app
+        with TestClient(app, raise_server_exceptions=False) as client:
+            resp = client.get(
+                "/api/claims",
+                headers={"Authorization": "Bearer this.is.not.valid"},
+            )
+    assert resp.status_code == 401
+
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 def test_health_returns_200(api_client):

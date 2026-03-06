@@ -10,7 +10,7 @@ GET /api/ml/all-fraud-scores  — all providers ranked by fraud risk
 import sys
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 # Add project root so ml/ is importable from the backend process
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
@@ -23,9 +23,10 @@ from ml.predict import (
     predict_patient_risk,
 )
 
+from ..auth import get_current_user
 from ..database import get_conn
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 _NOT_TRAINED = HTTPException(
     status_code=503,

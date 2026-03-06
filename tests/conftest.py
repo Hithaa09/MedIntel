@@ -1,18 +1,18 @@
 """Shared pytest fixtures for MedIntel test suite."""
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
-# Ensure project root is importable
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
 
+# ── ML / data fixtures ────────────────────────────────────────────────────────
+
 @pytest.fixture(scope="session")
 def raw_df():
-    """Load the cleaned CSV once for the whole test session."""
     from ml.features import load_cleaned_data
     return load_cleaned_data()
 
@@ -29,13 +29,35 @@ def provider_df(raw_df):
     return build_provider_features(raw_df)
 
 
+# ── API client fixture ────────────────────────────────────────────────────────
+
 @pytest.fixture()
 def api_client():
-    """FastAPI TestClient with Oracle pool mocked out."""
+    """
+    FastAPI TestClient with:
+      - Oracle pool mocked out (no real DB required)
+      - Valid JWT token injected as default Authorization header
+    """
     from fastapi.testclient import TestClient
 
     with patch("backend.app.database.init_pool"), \
          patch("backend.app.database.close_pool"):
         from backend.app.main import app
-        with TestClient(app, raise_server_exceptions=False) as client:
+        from backend.app.auth import create_access_token
+
+        token = create_access_token(
+            email="test@medintel.io",
+            name="Test User",
+            role="Analyst",
+        )
+        headers = {"Authorization": f"Bearer {token}"}
+
+        with TestClient(app, headers=headers, raise_server_exceptions=False) as client:
             yield client
+
+
+@pytest.fixture()
+def auth_token():
+    """Return a valid JWT token string for use in individual test assertions."""
+    from backend.app.auth import create_access_token
+    return create_access_token("test@medintel.io", "Test User", "Analyst")

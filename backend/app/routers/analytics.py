@@ -1,10 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from ..auth import get_current_user
 from ..database import get_conn
 from ..schemas import (
     Summary, StateCount, ConditionStats, ProviderStat, MonthlyPoint
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("/summary", response_model=Summary, summary="High-level KPIs")
