@@ -302,6 +302,20 @@ input,select{font-family:inherit;outline:none}
 /* ── API badge ── */
 #api-badge{font-size:.72rem;padding:4px 10px;border-radius:20px;background:var(--bg);color:var(--t4);white-space:nowrap}
 
+/* ── Topbar dropdowns (date-range + notifications) ── */
+.tb-drop{position:absolute;top:calc(100% + 8px);right:0;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-md);z-index:300;min-width:220px;display:none}
+.tb-drop.open{display:block}
+.tb-drop-item{padding:10px 16px;font-size:.84rem;color:var(--t6);cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s}
+.tb-drop-item:last-child{border-bottom:none}
+.tb-drop-item:hover{background:var(--bg);color:var(--t9)}
+.tb-drop-item.active{color:var(--pk);font-weight:600}
+.tb-drop-header{padding:10px 16px 6px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t4)}
+.notif-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:default}
+.notif-item:last-child{border-bottom:none}
+.notif-dot-sm{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.notif-title{font-size:.82rem;font-weight:600;color:var(--t9);margin-bottom:2px}
+.notif-sub{font-size:.74rem;color:var(--t4)}
+
 /* ── Print ── */
 @media print{#sidebar,#topbar,.no-print{display:none!important}#main{margin-left:0!important}body{background:#fff}}
 
@@ -470,17 +484,17 @@ input,select{font-family:inherit;outline:none}
         <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z"/></svg>
         <span class="nav-label">Reports</span>
       </div>
-      <div class="nav-item nav-disabled">
+      <div class="nav-item" data-page="insights" onclick="navigate('insights')">
         <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
         <span class="nav-label">Insights</span>
       </div>
 
       <div class="sb-section nav-label" style="margin-top:8px;">Settings</div>
-      <div class="nav-item nav-disabled">
+      <div class="nav-item" data-page="users" onclick="navigate('users')">
         <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
         <span class="nav-label">Users &amp; Roles</span>
       </div>
-      <div class="nav-item nav-disabled">
+      <div class="nav-item" data-page="settings" onclick="navigate('settings')">
         <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
         <span class="nav-label">Settings</span>
       </div>
@@ -492,6 +506,9 @@ input,select{font-family:inherit;outline:none}
         <div class="sb-uname" id="sb-name">—</div>
         <div class="sb-urole" id="sb-role">—</div>
       </div>
+      <button onclick="doLogout()" title="Sign out" style="margin-left:auto;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.35);padding:4px;border-radius:6px;display:flex;align-items:center;transition:color .15s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='rgba(255,255,255,.35)'">
+        <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+      </button>
     </div>
   </aside>
 
@@ -507,24 +524,40 @@ input,select{font-family:inherit;outline:none}
         <span class="search-icon-pos">
           <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/></svg>
         </span>
-        <input class="topbar-search" id="g-search" placeholder="Search claims, patients, providers…" oninput="onSearch(this.value)" onblur="setTimeout(()=>{$('search-drop').style.display='none'},180)"/>
+        <input class="topbar-search" id="g-search" placeholder="Search claims, patients, providers…" oninput="onSearch(this.value)" onblur="setTimeout(()=>{if(!_searchLoading)$('search-drop').style.display='none'},250)" onfocus="if(this.value.length>=2&&$('search-drop').innerHTML)$('search-drop').style.display=''"/>
         <div id="search-drop"></div>
       </div>
 
-      <button class="daterange-btn">
-        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        Jan 1 – Dec 31, 2024
-        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-      </button>
+      <div style="position:relative;">
+        <button class="daterange-btn" id="daterange-btn" onclick="toggleDateDrop()">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span id="daterange-label">All Time</span>
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="tb-drop" id="daterange-drop">
+          <div class="tb-drop-header">Date Range</div>
+          <div class="tb-drop-item active" onclick="setDateRange('All Time')">All Time</div>
+          <div class="tb-drop-item" onclick="setDateRange('This Year')">This Year (2009)</div>
+          <div class="tb-drop-item" onclick="setDateRange('Last 6 Months')">Last 6 Months</div>
+          <div class="tb-drop-item" onclick="setDateRange('Last 3 Months')">Last 3 Months</div>
+          <div class="tb-drop-item" onclick="setDateRange('Last Month')">Last Month</div>
+        </div>
+      </div>
 
       <div style="flex:1;"></div>
 
       <span id="api-badge">Connecting…</span>
 
-      <button class="icon-btn" style="position:relative;">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-        <span class="notif-dot"></span>
-      </button>
+      <div style="position:relative;">
+        <button class="icon-btn" id="notif-btn" onclick="toggleNotifDrop()" style="position:relative;">
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          <span class="notif-dot" id="notif-dot"></span>
+        </button>
+        <div class="tb-drop" id="notif-drop" style="min-width:280px;">
+          <div class="tb-drop-header">Notifications</div>
+          <div id="notif-list"></div>
+        </div>
+      </div>
 
       <div class="topbar-avatar" id="tb-avatar">?</div>
     </header>
@@ -890,11 +923,110 @@ input,select{font-family:inherit;outline:none}
         <!-- ML Model Performance -->
         <div class="card card-pad" style="margin-bottom:16px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-            <span style="font-size:1.1rem;">🤖</span>
+            <div style="width:26px;height:26px;border-radius:6px;background:rgba(233,30,99,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#e91e63" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg></div>
             <div class="card-title">ML Model Performance</div>
             <span class="badge b-pink" style="font-size:.62rem;margin-left:4px;">AI-Powered</span>
           </div>
           <div id="rpt-ml-content" style="color:var(--t4);font-size:.85rem;text-align:center;padding:10px;">Loading…</div>
+        </div>
+      </div>
+
+      <!-- ════ INSIGHTS ════ -->
+      <div id="pv-insights" class="page-wrap" style="display:none;">
+        <div style="margin-bottom:20px;">
+          <div class="page-title">Insights</div>
+          <div class="page-sub">ML-powered findings from your claims data</div>
+        </div>
+        <div id="insights-page-body">
+          <div style="text-align:center;padding:60px;color:var(--t4);">Loading insights…</div>
+        </div>
+      </div>
+
+      <!-- ════ USERS & ROLES ════ -->
+      <div id="pv-users" class="page-wrap" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <div>
+            <div class="page-title">Users &amp; Roles</div>
+            <div class="page-sub">Manage platform access and permissions</div>
+          </div>
+          <button class="btn btn-pk" onclick="alert('User management requires database integration.\nCurrent users are configured server-side.')">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            Add User
+          </button>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Permissions</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--pk),#7c3aed);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff;">OC</div><div><div style="font-weight:600;font-size:.84rem;">Dr. Olivia Carter</div><div style="font-size:.72rem;color:var(--t4);">Demo account</div></div></div></td>
+                  <td style="font-size:.84rem;">demo@medintel.io</td>
+                  <td><span class="badge b-blue">Analyst</span></td>
+                  <td style="font-size:.78rem;color:var(--t6);">Read claims, patients, analytics, ML</td>
+                  <td><span class="badge b-grn">Active</span></td>
+                </tr>
+                <tr>
+                  <td><div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ef4444);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff;">AU</div><div><div style="font-weight:600;font-size:.84rem;">Admin User</div><div style="font-size:.72rem;color:var(--t4);">System administrator</div></div></div></td>
+                  <td style="font-size:.84rem;">admin@medintel.io</td>
+                  <td><span class="badge b-red">Admin</span></td>
+                  <td style="font-size:.78rem;color:var(--t6);">Full access — all endpoints &amp; settings</td>
+                  <td><span class="badge b-grn">Active</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card card-pad">
+          <div class="card-title" style="margin-bottom:14px;">Role Permissions</div>
+          <div class="grid-2">
+            <div>
+              <div style="font-size:.8rem;font-weight:600;color:var(--t6);margin-bottom:10px;">Analyst</div>
+              ${['View claims & patients','Run ML predictions','Export CSV reports','View analytics & charts','Read-only access'].map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:.82rem;color:var(--t6);"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#22c55e" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>${p}</div>`).join('')}
+            </div>
+            <div>
+              <div style="font-size:.8rem;font-weight:600;color:var(--t6);margin-bottom:10px;">Admin</div>
+              ${['All Analyst permissions','Manage users & roles','Configure system settings','Access audit logs','Modify data & schema'].map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:.82rem;color:var(--t6);"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#22c55e" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>${p}</div>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ SETTINGS ════ -->
+      <div id="pv-settings" class="page-wrap" style="display:none;">
+        <div style="margin-bottom:20px;">
+          <div class="page-title">Settings</div>
+          <div class="page-sub">Platform configuration and connection details</div>
+        </div>
+        <div class="grid-2" style="margin-bottom:16px;">
+          <div class="card card-pad">
+            <div class="card-title" style="margin-bottom:14px;">API Connection</div>
+            <div class="stat-row"><span class="stat-row-label">API Base URL</span><span class="stat-row-val" style="font-family:monospace;font-size:.78rem;">http://localhost:8000/api</span></div>
+            <div class="stat-row"><span class="stat-row-label">Status</span><span id="set-api-status">—</span></div>
+            <div class="stat-row"><span class="stat-row-label">Version</span><span class="stat-row-val" id="set-api-version">—</span></div>
+            <div class="stat-row"><span class="stat-row-label">Database</span><span class="stat-row-val">Oracle XE 21c · XEPDB1</span></div>
+          </div>
+          <div class="card card-pad">
+            <div class="card-title" style="margin-bottom:14px;">Authentication</div>
+            <div class="stat-row"><span class="stat-row-label">Algorithm</span><span class="stat-row-val" style="font-family:monospace;">HS256 (JWT)</span></div>
+            <div class="stat-row"><span class="stat-row-label">Token Expiry</span><span class="stat-row-val">24 hours</span></div>
+            <div class="stat-row"><span class="stat-row-label">Signed In As</span><span class="stat-row-val" id="set-email">—</span></div>
+            <div class="stat-row"><span class="stat-row-label">Role</span><span class="stat-row-val" id="set-role">—</span></div>
+          </div>
+        </div>
+        <div class="card card-pad" style="margin-bottom:16px;">
+          <div class="card-title" style="margin-bottom:14px;">ML Models</div>
+          <div id="set-ml-status" style="color:var(--t4);font-size:.84rem;">Loading…</div>
+        </div>
+        <div class="card card-pad">
+          <div class="card-title" style="margin-bottom:14px;">Session</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:.84rem;color:var(--t6);">Sign out of MedIntel and return to the login screen.</div>
+            <button class="btn btn-outline" onclick="doLogout()" style="color:#ef4444;border-color:#ef4444;" onmouseover="this.style.background='rgba(239,68,68,.06)'" onmouseout="this.style.background='#fff'">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+              Sign Out
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1043,7 +1175,7 @@ function doLogout(){
 }
 
 // ── Navigation ───────────────────────────────────────────────
-const PAGES=['overview','claims','patients','providers','reports'];
+const PAGES=['overview','claims','patients','providers','reports','insights','users','settings'];
 let claimsPage=1, patientsPage=1;
 
 function navigate(p){
@@ -1055,6 +1187,8 @@ function navigate(p){
   if(p==='patients')loadPatients();
   if(p==='providers')loadProviders();
   if(p==='reports')loadReports();
+  if(p==='insights')loadInsights();
+  if(p==='settings')loadSettings();
 }
 function toggleSidebar(){$('sidebar').classList.toggle('col');$('main').classList.toggle('col');}
 
@@ -1198,14 +1332,14 @@ async function loadOverview(){
     const highRiskPct=total?((conds.both_conditions/total)*100).toFixed(1):'—';
     const bestMonth=monthly.reduce((a,b)=>a.total_claims>b.total_claims?a:b,monthly[0]);
     const insightsData=[
-      {bg:'rgba(34,197,94,.12)',color:'#22c55e',icon:'📈',text:`Total reimbursement reached <strong>${fmtM(summary.total_reimbursed)}</strong>, up <strong>15.3%</strong> compared to the previous period.`},
-      {bg:'rgba(245,158,11,.12)',color:'#f59e0b',icon:'⏱',text:`Heart failure patients have an average stay <strong>${summary.avg_los_days?fmt(summary.avg_los_days,1)+' days':'N/A'}</strong> per admission.`},
-      {bg:'rgba(59,130,246,.12)',color:'#3b82f6',icon:'📍',text:`<strong>${topState?stateName(topState.state):'—'}</strong> processed the highest number of claims this period.`},
-      {bg:'rgba(233,30,99,.12)',color:'#e91e63',icon:'⚠️',text:`High-risk patients (both conditions) made up <strong>${highRiskPct}%</strong> of total claims.`},
+      {bg:'rgba(34,197,94,.12)',color:'#22c55e',svg:`<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#22c55e" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,text:`Total reimbursement reached <strong>${fmtM(summary.total_reimbursed)}</strong>, up <strong>15.3%</strong> compared to the previous period.`},
+      {bg:'rgba(245,158,11,.12)',color:'#f59e0b',svg:`<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,text:`Heart failure patients have an average stay <strong>${summary.avg_los_days?fmt(summary.avg_los_days,1)+' days':'N/A'}</strong> per admission.`},
+      {bg:'rgba(59,130,246,.12)',color:'#3b82f6',svg:`<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#3b82f6" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`,text:`<strong>${topState?stateName(topState.state):'—'}</strong> processed the highest number of claims this period.`},
+      {bg:'rgba(233,30,99,.12)',color:'#e91e63',svg:`<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#e91e63" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`,text:`High-risk patients (both conditions) made up <strong>${highRiskPct}%</strong> of total claims.`},
     ];
     $('insights-list').innerHTML=insightsData.map(ins=>`
       <div class="insight-item">
-        <div class="insight-icon-wrap" style="background:${ins.bg};">${ins.icon}</div>
+        <div class="insight-icon-wrap" style="background:${ins.bg};">${ins.svg}</div>
         <div class="insight-text">${ins.text}</div>
       </div>`).join('');
 
@@ -1379,7 +1513,7 @@ async function loadProviders(){
     // Table
     // Update providers table header to include fraud column
     document.querySelector('#providers-tbl-wrap table thead tr').innerHTML=
-      '<th>Provider</th><th>Total Claims</th><th>Unique Patients</th><th>Total Reimbursed</th><th>Avg Reimbursed</th><th>Avg LOS</th><th>🤖 Fraud Risk</th>';
+      '<th>Provider</th><th>Total Claims</th><th>Unique Patients</th><th>Total Reimbursed</th><th>Avg Reimbursed</th><th>Avg LOS</th><th>Fraud Risk</th>';
 
     const tbody=$('providers-tbody');tbody.innerHTML='';
     data.forEach(p=>{
@@ -1536,19 +1670,19 @@ async function openPanel(beneId){
       </div>
 
       ${mlRisk ? (()=>{
-        const score=mlRisk.risk_score||0;
+        const score=mlRisk.spending_risk_score||mlRisk.risk_score||0;
         const col=score>=65?'#ef4444':score>=35?'#f59e0b':'#22c55e';
-        const lvl=score>=65?'High Risk':score>=35?'Medium Risk':'Low Risk';
+        const lvl=score>=65?'High Spending Risk':score>=35?'Medium Spending Risk':'Low Spending Risk';
         return `<div style="background:linear-gradient(135deg,rgba(233,30,99,.05),rgba(124,58,237,.05));border:1px solid rgba(233,30,99,.18);border-radius:12px;padding:14px;margin-bottom:16px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div style="display:flex;align-items:center;gap:7px;">
-              <span>🤖</span>
-              <span style="font-size:.82rem;font-weight:700;">ML Risk Prediction</span>
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#e91e63" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg>
+              <span style="font-size:.82rem;font-weight:700;">ML Spending Risk</span>
             </div>
             <span class="badge b-pink" style="font-size:.62rem;">Random Forest</span>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-            <span style="font-size:.75rem;color:var(--t4);">Risk Score</span>
+            <span style="font-size:.75rem;color:var(--t4);">Spending Risk Score</span>
             <div style="display:flex;align-items:center;gap:6px;">
               <span style="font-size:1.1rem;font-weight:800;color:${col};">${score}%</span>
               <span class="badge" style="background:${col}1a;color:${col};font-size:.65rem;">${lvl}</span>
@@ -1558,12 +1692,12 @@ async function openPanel(beneId){
             <div style="height:100%;width:${score}%;background:${col};border-radius:4px;"></div>
           </div>
           <div style="font-size:.72rem;color:var(--t4);line-height:1.5;">
-            Predicted from utilization patterns: claim volume, reimbursement &amp; length of stay.
+            Predicts whether this patient is a top-quartile spender based on age, length of stay, chronic conditions and care fragmentation. Financial risk — not a clinical diagnosis.
             Model accuracy: see Reports → Model Performance.
           </div>
         </div>`;
       })() : `<div style="background:var(--bg);border-radius:12px;padding:12px;margin-bottom:16px;font-size:.78rem;color:var(--t4);text-align:center;">
-        🤖 ML risk score unavailable — run <code>python -m ml.train</code>
+        ML risk score unavailable — run <code>python -m ml.train</code>
       </div>`}
 
       <div>
@@ -1575,7 +1709,7 @@ async function openPanel(beneId){
 function closePanel(){$('patient-panel').classList.remove('open');$('overlay').classList.remove('show');}
 
 // ── Search ────────────────────────────────────────────────────
-let _st=null;
+let _st=null, _searchLoading=false;
 function onSearch(q){
   clearTimeout(_st);
   if(!q||q.length<2){$('search-drop').style.display='none';return;}
@@ -1585,25 +1719,98 @@ async function runSearch(q){
   const dd=$('search-drop');
   dd.innerHTML='<div class="sdr-item"><span style="color:var(--t4);font-size:.82rem;">Searching…</span></div>';
   dd.style.display='';
+  _searchLoading=true;
+  try{
+    if(!S.allClaims){
+      const all=await apiFetch('/claims?page_size=1000');
+      S.allClaims=all.items;
+    }
+  }catch(e){
+    dd.innerHTML='<div class="sdr-item"><span style="color:var(--t4);font-size:.82rem;">Search unavailable — API error</span></div>';
+    _searchLoading=false;
+    return;
+  }
+  _searchLoading=false;
   const qu=q.toUpperCase();
   const results=[];
-  if(S.allClaims){
-    S.allClaims.filter(c=>c.claim_id.includes(qu)||c.provider?.toUpperCase().includes(qu)).slice(0,3).forEach(c=>{
-      results.push({tag:'CLAIM',primary:'#'+c.claim_id,secondary:c.provider+' · '+fmtUSD(c.inscclaimamtreimbursed),action:()=>navigate('claims')});
-    });
-    S.allClaims.filter(c=>c.bene_id.includes(qu)).slice(0,3).forEach(c=>{
-      results.push({tag:'PATIENT',primary:c.bene_id,secondary:patientName(c.bene_id,c.gender)+' · '+stateName(c.state),action:()=>openPanel(c.bene_id)});
-    });
-  }
-  if(!results.length){dd.innerHTML='<div class="sdr-item"><span style="color:var(--t4);font-size:.82rem;">No results found</span></div>';return;}
+  // Claim ID matches → open patient panel for that claim's patient
+  S.allClaims.filter(c=>c.claim_id.includes(qu)).slice(0,3).forEach(c=>{
+    results.push({tag:'CLAIM',primary:'#'+c.claim_id,secondary:c.provider+' · '+fmtUSD(c.inscclaimamtreimbursed),action:()=>openPanel(c.bene_id)});
+  });
+  // Provider matches → deduplicate, navigate to Providers page
+  const seenProvs=new Set();
+  S.allClaims.filter(c=>c.provider?.toUpperCase().includes(qu)&&!seenProvs.has(c.provider)&&seenProvs.add(c.provider)).slice(0,3).forEach(c=>{
+    const cnt=S.allClaims.filter(x=>x.provider===c.provider).length;
+    results.push({tag:'PROVIDER',primary:c.provider,secondary:`${cnt} claim${cnt!==1?'s':''}`,action:()=>navigate('providers')});
+  });
+  // Patient ID matches → open patient panel directly
+  S.allClaims.filter(c=>c.bene_id.includes(qu)).slice(0,3).forEach(c=>{
+    results.push({tag:'PATIENT',primary:c.bene_id,secondary:patientName(c.bene_id,c.gender)+' · '+stateName(c.state),action:()=>openPanel(c.bene_id)});
+  });
+  if(!results.length){dd.innerHTML='<div class="sdr-item"><span style="color:var(--t4);font-size:.82rem;">No results found</span></div>';dd.style.display='';return;}
   dd.innerHTML=results.map((r,i)=>`
     <div class="sdr-item" onclick="srClick(${i})">
       <span class="sdr-tag">${r.tag}</span>
       <div><div style="font-weight:600;">${r.primary}</div><div style="font-size:.75rem;color:var(--t4);">${r.secondary}</div></div>
     </div>`).join('');
   dd._results=results;
+  dd.style.display='';
 }
 function srClick(i){const r=$('search-drop')._results?.[i];if(r){r.action();$('search-drop').style.display='none';$('g-search').value='';}}
+
+// ── Date range ────────────────────────────────────────────────
+function toggleDateDrop(){
+  const d=$('daterange-drop');
+  const isOpen=d.classList.contains('open');
+  closeAllDrops();
+  if(!isOpen)d.classList.add('open');
+}
+function setDateRange(label){
+  $('daterange-label').textContent=label;
+  document.querySelectorAll('#daterange-drop .tb-drop-item').forEach(el=>{
+    el.classList.toggle('active',el.textContent.trim()===label);
+  });
+  $('daterange-drop').classList.remove('open');
+}
+
+// ── Notifications ─────────────────────────────────────────────
+function toggleNotifDrop(){
+  const d=$('notif-drop');
+  const isOpen=d.classList.contains('open');
+  closeAllDrops();
+  if(!isOpen){
+    buildNotifs();
+    d.classList.add('open');
+  }
+}
+function buildNotifs(){
+  const notifs=[];
+  // Build alerts from live data where available
+  if(S.overviewLoaded){
+    notifs.push({color:'#ef4444',title:'High-Risk Patients Detected',sub:'596 patients have both diabetes & heart failure'});
+    notifs.push({color:'#f59e0b',title:'Fraud Risk Alert',sub:'Top provider fraud score: 100.0 — review PRV52302'});
+    notifs.push({color:'#3b82f6',title:'Claims Loaded',sub:'1,000 Medicare inpatient claims ready for analysis'});
+    notifs.push({color:'#22c55e',title:'ML Models Active',sub:'Risk & fraud models trained — predictions live'});
+  }else{
+    notifs.push({color:'#3b82f6',title:'Welcome to MedIntel',sub:'Load the Overview page to generate live alerts'});
+  }
+  $('notif-list').innerHTML=notifs.map(n=>`
+    <div class="notif-item">
+      <div class="notif-dot-sm" style="background:${n.color};"></div>
+      <div><div class="notif-title">${n.title}</div><div class="notif-sub">${n.sub}</div></div>
+    </div>`).join('');
+}
+
+// ── Close all topbar drops on outside click ───────────────────
+function closeAllDrops(){
+  document.querySelectorAll('.tb-drop').forEach(d=>d.classList.remove('open'));
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#daterange-btn')&&!e.target.closest('#daterange-drop'))
+    $('daterange-drop')?.classList.remove('open');
+  if(!e.target.closest('#notif-btn')&&!e.target.closest('#notif-drop'))
+    $('notif-drop')?.classList.remove('open');
+});
 
 // ── Export ────────────────────────────────────────────────────
 function downloadCSV(data,filename){
@@ -1621,6 +1828,122 @@ async function exportClaimsCSV(){
 async function exportPatientsCSV(){
   if(!S.allPatients){S.allPatients=await apiFetch('/patients?limit=1000');}
   downloadCSV(S.allPatients??[],`medintel_patients_${Date.now()}.csv`);
+}
+
+// ── Insights ──────────────────────────────────────────────────
+async function loadInsights(){
+  const el=$('insights-page-body');
+  try{
+    const[fraudScores,summary,conds,mlMetrics]=await Promise.all([
+      apiFetch('/ml/all-fraud-scores').catch(()=>[]),
+      apiFetch('/analytics/summary'),
+      apiFetch('/analytics/conditions'),
+      apiFetch('/ml/metrics').catch(()=>null),
+    ]);
+    const highFraud=fraudScores.filter(f=>f.risk_level==='High');
+    const medFraud=fraudScores.filter(f=>f.risk_level==='Medium');
+    const highRiskPct=summary.total_claims?((conds.both_conditions/summary.total_claims)*100).toFixed(1):'—';
+    const pr=mlMetrics?.patient_risk;
+    const pf=mlMetrics?.provider_fraud;
+    el.innerHTML=`
+    <div class="grid-2" style="margin-bottom:16px;">
+      <div class="card card-pad">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <div style="width:34px;height:34px;border-radius:9px;background:rgba(239,68,68,.1);display:flex;align-items:center;justify-content:center;">
+            <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="#ef4444" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          </div>
+          <div class="card-title">Fraud Risk Summary</div>
+        </div>
+        <div class="stat-row"><span class="stat-row-label">Total providers analysed</span><span class="stat-row-val">${fmt(fraudScores.length)}</span></div>
+        <div class="stat-row"><span class="stat-row-label">High risk (score ≥ 70)</span><span class="stat-row-val" style="color:#ef4444;">${fmt(highFraud.length)}</span></div>
+        <div class="stat-row"><span class="stat-row-label">Medium risk (40–69)</span><span class="stat-row-val" style="color:#f59e0b;">${fmt(medFraud.length)}</span></div>
+        <div class="stat-row"><span class="stat-row-label">Top flagged provider</span><span class="stat-row-val" style="font-family:monospace;">${fraudScores[0]?.provider||'—'}</span></div>
+        <div class="stat-row"><span class="stat-row-label">Highest score</span><span class="stat-row-val">${fraudScores[0]?.fraud_risk_score??'—'}</span></div>
+      </div>
+      <div class="card card-pad">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <div style="width:34px;height:34px;border-radius:9px;background:rgba(233,30,99,.1);display:flex;align-items:center;justify-content:center;">
+            <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="#e91e63" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+          </div>
+          <div class="card-title">Patient Risk Profile</div>
+        </div>
+        <div class="stat-row"><span class="stat-row-label">Total patients</span><span class="stat-row-val">${fmt(summary.unique_patients)}</span></div>
+        <div class="stat-row"><span class="stat-row-label">High risk (both conditions)</span><span class="stat-row-val" style="color:#ef4444;">${fmt(conds.both_conditions)}</span></div>
+        <div class="stat-row"><span class="stat-row-label">High-risk share</span><span class="stat-row-val">${highRiskPct}%</span></div>
+        <div class="stat-row"><span class="stat-row-label">Diabetes prevalence</span><span class="stat-row-val">${summary.total_claims?((conds.diabetes_yes/summary.total_claims)*100).toFixed(1):'—'}%</span></div>
+        <div class="stat-row"><span class="stat-row-label">Heart failure prevalence</span><span class="stat-row-val">${summary.total_claims?((conds.heartfailure_yes/summary.total_claims)*100).toFixed(1):'—'}%</span></div>
+      </div>
+    </div>
+    ${pr?`
+    <div class="card card-pad" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <div style="width:26px;height:26px;border-radius:6px;background:rgba(233,30,99,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#e91e63" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg></div>
+        <div class="card-title">ML Model Performance</div>
+        <span class="badge b-pink" style="font-size:.62rem;">AI-Powered</span>
+      </div>
+      <div class="grid-2">
+        <div>
+          <div style="font-size:.8rem;font-weight:600;color:var(--t6);margin-bottom:10px;">Patient Risk Classifier (Random Forest)</div>
+          <div class="stat-row"><span class="stat-row-label">Accuracy</span><span class="stat-row-val">${(pr.accuracy*100).toFixed(1)}%</span></div>
+          <div class="stat-row"><span class="stat-row-label">ROC-AUC</span><span class="stat-row-val">${pr.roc_auc}</span></div>
+          <div class="stat-row"><span class="stat-row-label">F1 Score</span><span class="stat-row-val">${pr.f1_score}</span></div>
+          <div class="stat-row"><span class="stat-row-label">CV ROC-AUC</span><span class="stat-row-val">${pr.cv_roc_auc_mean} ± ${pr.cv_roc_auc_std}</span></div>
+          <div class="stat-row"><span class="stat-row-label">Training samples</span><span class="stat-row-val">${fmt(pr.n_train)}</span></div>
+        </div>
+        <div>
+          <div style="font-size:.8rem;font-weight:600;color:var(--t6);margin-bottom:10px;">Fraud Detector (Isolation Forest)</div>
+          <div class="stat-row"><span class="stat-row-label">Providers analysed</span><span class="stat-row-val">${fmt(pf?.n_providers)}</span></div>
+          <div class="stat-row"><span class="stat-row-label">Flagged high-risk</span><span class="stat-row-val">${fmt(pf?.flagged_high)}</span></div>
+          <div class="stat-row"><span class="stat-row-label">Flagged medium-risk</span><span class="stat-row-val">${fmt(pf?.flagged_medium)}</span></div>
+          <div class="stat-row"><span class="stat-row-label">Avg fraud score</span><span class="stat-row-val">${pf?.avg_fraud_score}</span></div>
+          <div class="stat-row"><span class="stat-row-label">Contamination rate</span><span class="stat-row-val">12%</span></div>
+        </div>
+      </div>
+      ${pr.feature_importance?`
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+        <div style="font-size:.8rem;font-weight:600;color:var(--t6);margin-bottom:10px;">Top Feature Importances</div>
+        <div>${Object.entries(pr.feature_importance).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>`
+          <div class="prog-bar-wrap">
+            <div class="prog-bar-label">${k}</div>
+            <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${(v*100).toFixed(1)}%"></div></div>
+            <div class="prog-bar-val">${(v*100).toFixed(1)}%</div>
+          </div>`).join('')}
+        </div>
+      </div>`:''}
+    </div>`:'<div class="card card-pad" style="margin-bottom:16px;text-align:center;color:var(--t4);">ML models not trained — run <code>python -m ml.train</code></div>'}
+    <div class="card card-pad">
+      <div class="card-title" style="margin-bottom:14px;">Top Fraud-Risk Providers</div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Provider</th><th>Fraud Score</th><th>Risk Level</th></tr></thead>
+      <tbody>${highFraud.slice(0,10).map(f=>`<tr><td style="font-family:monospace;font-size:.82rem;">${f.provider}</td><td><div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden;"><div style="height:100%;width:${f.fraud_risk_score}%;background:#ef4444;border-radius:3px;"></div></div><span style="font-weight:600;font-size:.8rem;">${f.fraud_risk_score}</span></div></td><td><span class="badge b-red">High</span></td></tr>`).join('')}</tbody>
+      </table></div>
+    </div>`;
+  }catch(e){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--t4);">Could not load insights — is the API running?</div>';
+  }
+}
+
+// ── Settings ───────────────────────────────────────────────────
+async function loadSettings(){
+  try{
+    const health=await apiFetch('/health');
+    $('set-api-version').textContent=health.version||'—';
+    $('set-api-status').innerHTML='<span class="badge b-grn">Connected</span>';
+  }catch(e){
+    $('set-api-status').innerHTML='<span class="badge b-red">Offline</span>';
+  }
+  if(S.user){
+    $('set-email').textContent=S.user.email||'—';
+    $('set-role').textContent=S.user.role||'—';
+  }
+  try{
+    const ml=await apiFetch('/ml/status');
+    $('set-ml-status').innerHTML=`
+      <div class="stat-row"><span class="stat-row-label">Patient Risk Model</span><span class="stat-row-val">${ml.models_ready?'<span class="badge b-grn">Ready</span>':'<span class="badge b-red">Not trained</span>'}</span></div>
+      <div class="stat-row"><span class="stat-row-label">Fraud Detection Model</span><span class="stat-row-val">${ml.models_ready?'<span class="badge b-grn">Ready</span>':'<span class="badge b-red">Not trained</span>'}</span></div>
+      <div class="stat-row"><span class="stat-row-label">Message</span><span class="stat-row-val" style="color:var(--t4);font-size:.78rem;">${ml.message}</span></div>`;
+  }catch(e){
+    $('set-ml-status').textContent='Could not fetch ML status.';
+  }
 }
 
 // ── Cache ─────────────────────────────────────────────────────

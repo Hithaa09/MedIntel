@@ -4,13 +4,43 @@ Authentication endpoints.
 POST /api/auth/login   — submit credentials, receive JWT
 GET  /api/auth/me      — return the token's user profile
 """
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr
+import time
+from collections import defaultdict
+from threading import Lock
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel
 
 from ..auth import authenticate_user, create_access_token, get_current_user
 
 router = APIRouter()
 
+# ── Brute-force rate limiter ──────────────────────────────────────────────────
+# Sliding window: max 5 attempts per email per 5 minutes.
+_attempts: dict[str, list[float]] = defaultdict(list)
+_rl_lock  = Lock()
+_MAX_ATTEMPTS = 5
+_WINDOW_SEC   = 300  # 5 minutes
+
+
+def _check_rate_limit(email: str) -> None:
+    """Raise 429 if this email has exceeded the login attempt threshold."""
+    now = time.monotonic()
+    with _rl_lock:
+        window_start = now - _WINDOW_SEC
+        recent = [t for t in _attempts[email] if t > window_start]
+        recent.append(now)
+        _attempts[email] = recent          # evict old entries
+
+    if len(recent) > _MAX_ATTEMPTS:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many login attempts. Try again in {_WINDOW_SEC // 60} minutes.",
+            headers={"Retry-After": str(_WINDOW_SEC)},
+        )
+
+
+# ── Schemas ───────────────────────────────────────────────────────────────────
 
 class LoginRequest(BaseModel):
     email: str
@@ -29,12 +59,16 @@ class TokenResponse(BaseModel):
     user:         UserOut
 
 
+# ── Endpoints ─────────────────────────────────────────────────────────────────
+
 @router.post(
     "/login",
     response_model=TokenResponse,
     summary="Authenticate and receive a JWT token",
 )
-def login(body: LoginRequest):
+def login(body: LoginRequest, request: Request):
+    _check_rate_limit(body.email.lower().strip())
+
     user = authenticate_user(body.email, body.password)
     if not user:
         raise HTTPException(

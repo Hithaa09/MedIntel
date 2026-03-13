@@ -20,7 +20,7 @@ from ml.predict import (
     get_metrics,
     get_provider_fraud_score,
     models_ready,
-    predict_patient_risk,
+    predict_patient_spending_risk,
 )
 
 from ..auth import get_current_user
@@ -58,7 +58,7 @@ def ml_metrics():
 
 # ── Patient risk ──────────────────────────────────────────────────────────────
 
-@router.get("/patient-risk/{bene_id}", summary="ML-predicted risk score for a patient")
+@router.get("/patient-risk/{bene_id}", summary="ML-predicted spending risk score for a patient (financial risk, not clinical)")
 def patient_risk(bene_id: str):
     if not models_ready():
         raise _NOT_TRAINED
@@ -87,7 +87,9 @@ def patient_risk(bene_id: str):
         raise HTTPException(status_code=404, detail=f"Patient '{bene_id}' not found")
 
     dob = row[6]
-    age = float(2010 - dob.year) if dob else 65.0
+    # Use 2009 — the actual year of this CMS dataset — not a magic constant
+    DATA_REF_YEAR = 2009
+    age = float(DATA_REF_YEAR - dob.year) if dob else 65.0
 
     features = {
         "claim_count":       float(row[0] or 0),
@@ -101,7 +103,7 @@ def patient_risk(bene_id: str):
         "has_heartfailure":  float(row[8] or 0),
     }
 
-    prob = predict_patient_risk(features)
+    prob = predict_patient_spending_risk(features)
     if prob is None:
         raise _NOT_TRAINED
 
@@ -110,9 +112,10 @@ def patient_risk(bene_id: str):
 
     return {
         "bene_id":          bene_id.upper(),
-        "risk_score":       score,
-        "risk_probability": round(prob, 4),
+        "spending_risk_score": score,
+        "spending_risk_probability": round(prob, 4),
         "risk_level":       level,
+        "note":             "Spending risk = top 25% by reimbursement cost (financial metric, not clinical)",
         "features_used":    features,
     }
 
@@ -121,9 +124,11 @@ def patient_risk(bene_id: str):
 
 @router.get("/provider-fraud/{provider}", summary="Fraud anomaly score for a provider")
 def provider_fraud(provider: str):
+    if not models_ready():
+        raise _NOT_TRAINED
     score = get_provider_fraud_score(provider.upper())
     if score is None:
-        raise _NOT_TRAINED
+        raise HTTPException(status_code=404, detail=f"Provider '{provider.upper()}' not found")
     level = "High" if score >= 70 else "Medium" if score >= 40 else "Low"
     return {"provider": provider.upper(), "fraud_risk_score": score, "risk_level": level}
 

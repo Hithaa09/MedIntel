@@ -30,7 +30,9 @@ services:
       DB_USER: ${DB_USER:-APP}
       DB_PASS: ${DB_PASS:-app}
       DB_DSN:  oracle:1521/XEPDB1
-      CORS_ORIGINS: "http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000"
+      SECRET_KEY: ${SECRET_KEY:-medintel-insecure-dev-key-change-before-deploy}
+      JWT_EXPIRE_HOURS: ${JWT_EXPIRE_HOURS:-24}
+      CORS_ORIGINS: '["http://localhost:5500","http://127.0.0.1:5500","http://localhost:3000"]'
     ports:
       - "8000:8000"
     depends_on:

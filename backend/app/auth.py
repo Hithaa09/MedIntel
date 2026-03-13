@@ -1,13 +1,12 @@
 """
 JWT authentication utilities for MedIntel.
 
-Uses:
-  - python-jose  for JWT encoding / decoding
-  - bcrypt (>=4)  for password hashing  (no passlib — incompatible with bcrypt 4+)
+Authentication strategy:
+  1. Query Oracle app_users table first (production path)
+  2. Fall back to hardcoded demo credentials if Oracle is unavailable
+     (development / demo without a live DB)
 
-Flow:
-  1. POST /api/auth/login  →  verify credentials  →  return JWT
-  2. Protected routes       →  validate Bearer token via get_current_user dependency
+Uses python-jose for JWT and bcrypt (>=4) for password hashing.
 """
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -28,40 +27,70 @@ def _hash(password: str) -> bytes:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
 
-def _verify(password: str, hashed: bytes) -> bool:
-    return bcrypt.checkpw(password.encode(), hashed)
+def _verify(password: str, hashed) -> bool:
+    """Accept hashed as bytes (from Python) or str (from Oracle VARCHAR2)."""
+    h = hashed.encode() if isinstance(hashed, str) else hashed
+    return bcrypt.checkpw(password.encode(), h)
 
 
-# ── Demo user store ───────────────────────────────────────────────────────────
-# Hashed once at startup.  In production: query a users table in the DB.
-_USERS: dict[str, dict] = {
+# ── Demo fallback (works without Oracle — for development and demos) ──────────
+# Hashes are computed once at startup; never stored in source control in plain text.
+_DEMO = {
     "demo@medintel.io": {
-        "email":  "demo@medintel.io",
-        "name":   "Dr. Olivia Carter",
-        "role":   "Analyst",
+        "name":  "Dr. Olivia Carter",
+        "role":  "Analyst",
         "hashed": _hash("demo1234"),
     },
     "admin@medintel.io": {
-        "email":  "admin@medintel.io",
-        "name":   "Admin User",
-        "role":   "Admin",
+        "name":  "Admin User",
+        "role":  "Admin",
         "hashed": _hash("admin1234"),
     },
 }
 
 
-# ── Core helpers ──────────────────────────────────────────────────────────────
+# ── Authentication ────────────────────────────────────────────────────────────
 
 def authenticate_user(email: str, password: str) -> Optional[dict]:
-    """Return the user dict if credentials are valid, otherwise None."""
-    user = _USERS.get(email.lower().strip())
-    if not user or not _verify(password, user["hashed"]):
-        return None
-    return user
+    """
+    Authenticate against Oracle app_users table (production).
+    Falls back to _DEMO credentials when Oracle is unavailable (demo mode).
+    Returns user dict on success, None on failure.
+    """
+    email_key = email.lower().strip()
 
+    # ── Oracle path (production) ──────────────────────────────────────────────
+    try:
+        from .database import get_conn
+        with get_conn() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT email, name, role, password_hash "
+                "FROM app_users "
+                "WHERE LOWER(email) = :email AND is_active = 1",
+                {"email": email_key},
+            )
+            row = cur.fetchone()
+        if row:
+            db_email, name, role, pw_hash = row
+            return (
+                {"email": db_email, "name": name, "role": role}
+                if _verify(password, pw_hash)
+                else None
+            )
+    except Exception:
+        pass  # Oracle not reachable — fall through to demo mode
+
+    # ── Demo fallback ─────────────────────────────────────────────────────────
+    demo = _DEMO.get(email_key)
+    if not demo or not _verify(password, demo["hashed"]):
+        return None
+    return {"email": email_key, "name": demo["name"], "role": demo["role"]}
+
+
+# ── Token ─────────────────────────────────────────────────────────────────────
 
 def create_access_token(email: str, name: str, role: str) -> str:
-    """Sign and return a JWT that expires after settings.jwt_expire_hours."""
     payload = {
         "sub":  email,
         "name": name,
@@ -76,10 +105,7 @@ def create_access_token(email: str, name: str, role: str) -> str:
 def get_current_user(
     creds: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ) -> dict:
-    """
-    Validate the Bearer token on every protected request.
-    Raises HTTP 401 if the token is missing, expired, or tampered.
-    """
+    """Validate Bearer token; raise 401 on missing / expired / tampered token."""
     if creds is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -92,11 +118,7 @@ def get_current_user(
             settings.secret_key,
             algorithms=[settings.jwt_algorithm],
         )
-        return {
-            "email": payload["sub"],
-            "name":  payload["name"],
-            "role":  payload["role"],
-        }
+        return {"email": payload["sub"], "name": payload["name"], "role": payload["role"]}
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -41,7 +41,7 @@ def _row_to_claim(row) -> Claim:
 @router.get("", response_model=ClaimPage, summary="List claims (paginated)")
 def list_claims(
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    page_size: int = Query(20, ge=1, le=1000),
     state: Optional[int] = Query(None, description="CMS state code"),
     gender: Optional[int] = Query(None, ge=1, le=2),
     provider: Optional[str] = Query(None),
@@ -63,7 +63,7 @@ def list_claims(
     where = ("WHERE " + " AND ".join(filters)) if filters else ""
 
     offset = (page - 1) * page_size
-    params.update({"limit": page_size, "offset": offset})
+    page_params = {**params, "limit": page_size, "offset": offset}
 
     with get_conn() as conn:
         cur = conn.cursor()
@@ -72,7 +72,7 @@ def list_claims(
 
         cur.execute(
             f"{_SELECT} {where} ORDER BY id OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY",
-            params,
+            page_params,
         )
         items = [_row_to_claim(r) for r in cur.fetchall()]
 

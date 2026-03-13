@@ -8,7 +8,7 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 
 @router.get("", response_model=list[PatientSummary], summary="List patients with risk scores")
 def list_patients(
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=1000),
     risk: str = Query(None, description="High | Medium | Low"),
 ):
     sql = """

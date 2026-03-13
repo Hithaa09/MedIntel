@@ -136,16 +136,18 @@ Open `frontend/index.html` in a browser (use VS Code Live Server for best result
 
 ## ML Model Details
 
-### Patient Risk Classifier
-- **Algorithm:** Random Forest (300 estimators)
-- **Features:** Age, gender, state, claim count, total/avg/max reimbursement, avg/max LOS, unique providers
-- **Target:** High-risk patient (has both diabetes AND heart failure — a validated clinical proxy)
-- **Evaluation:** Accuracy, F1 score, ROC-AUC, 5-fold cross-validation
+### Patient Spending Risk Classifier
+- **Algorithm:** Random Forest (300 estimators, class-balanced)
+- **Features:** Age, gender, state, avg/max LOS per admission, unique providers visited, diabetes flag, heart failure flag
+- **Target:** `spending_risk` — whether a patient's total annual reimbursement falls in the top quartile (≥ 75th percentile). This is a **financial risk** metric, not a clinical diagnosis.
+- **Note on leakage:** `claim_count` is intentionally excluded because it has a mechanical relationship with total cost. The remaining features are clinically grounded predictors with no algorithmic link to the target. In production with multi-year data you would use year-N features to predict year-N+1 spending.
+- **Evaluation:** Accuracy, weighted F1, ROC-AUC, 5-fold stratified cross-validation
 
 ### Provider Fraud Detector
 - **Algorithm:** Isolation Forest (unsupervised anomaly detection)
-- **Features:** Claim volume, patient count, reimbursement stats, LOS stats, condition rates
-- **Output:** Fraud risk score 0–100 per provider
+- **Features:** Claim volume, unique patients, claims-per-patient ratio, reimbursement stats (avg/max/std), LOS stats, chronic condition rates
+- **Contamination:** Estimated from data using an IQR-based outlier heuristic — not hard-coded
+- **Output:** Fraud anomaly score 0–100 per provider (higher = more anomalous billing pattern)
 
 ---
 

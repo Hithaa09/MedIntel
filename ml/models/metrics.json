@@ -1,60 +1,61 @@
 {
-  "patient_risk": {
+  "patient_spending_risk": {
     "model": "RandomForestClassifier",
+    "target": "spending_risk (top 25% future spending)",
+    "temporal_split": "Earlier claims \u2192 features, later claims \u2192 target (prevents leakage)",
     "n_estimators": 300,
-    "accuracy": 0.7538,
-    "f1_score": 0.7258,
-    "roc_auc": 0.6813,
-    "cv_roc_auc_mean": 0.6413,
-    "cv_roc_auc_std": 0.04,
+    "accuracy": 0.7487,
+    "f1_score": 0.7252,
+    "roc_auc": 0.6899,
+    "cv_roc_auc_mean": 0.6422,
+    "cv_roc_auc_std": 0.0392,
     "n_train": 794,
     "n_test": 199,
-    "high_spender_rate": 0.2518,
+    "spending_risk_rate": 0.2518,
     "feature_importance": {
-      "age": 0.2657,
-      "gender": 0.0438,
-      "state": 0.2567,
-      "claim_count": 0.0079,
-      "avg_los": 0.1681,
-      "max_los": 0.1724,
-      "unique_providers": 0.0005,
-      "has_diabetes": 0.0358,
-      "has_heartfailure": 0.0492
+      "age": 0.262,
+      "gender": 0.0408,
+      "state": 0.2522,
+      "avg_los": 0.1845,
+      "max_los": 0.1839,
+      "unique_providers": 0.0013,
+      "has_diabetes": 0.033,
+      "has_heartfailure": 0.0423
     },
     "confusion_matrix": [
       [
-        136,
-        13
+        134,
+        15
       ],
       [
-        36,
-        14
+        35,
+        15
       ]
     ],
     "classification_report": {
       "0": {
-        "precision": 0.7906976744186046,
-        "recall": 0.912751677852349,
-        "f1-score": 0.8473520249221184,
+        "precision": 0.7928994082840237,
+        "recall": 0.8993288590604027,
+        "f1-score": 0.8427672955974843,
         "support": 149.0
       },
       "1": {
-        "precision": 0.5185185185185185,
-        "recall": 0.28,
-        "f1-score": 0.36363636363636365,
+        "precision": 0.5,
+        "recall": 0.3,
+        "f1-score": 0.375,
         "support": 50.0
       },
-      "accuracy": 0.7537688442211056,
+      "accuracy": 0.7487437185929648,
       "macro avg": {
-        "precision": 0.6546080964685616,
-        "recall": 0.5963758389261745,
-        "f1-score": 0.605494194279241,
+        "precision": 0.6464497041420119,
+        "recall": 0.5996644295302014,
+        "f1-score": 0.6088836477987422,
         "support": 199.0
       },
       "weighted avg": {
-        "precision": 0.7223109518306432,
-        "recall": 0.7537688442211056,
-        "f1-score": 0.7258154266091146,
+        "precision": 0.719306592132259,
+        "recall": 0.7487437185929648,
+        "f1-score": 0.7252378243418349,
         "support": 199.0
       }
     }
@@ -62,7 +63,7 @@
   "provider_fraud": {
     "model": "IsolationForest",
     "n_estimators": 300,
-    "contamination": 0.12,
+    "contamination": 0.2,
     "n_providers": 544,
     "flagged_high": 20,
     "flagged_medium": 75,

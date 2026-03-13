@@ -3,14 +3,15 @@ MedIntel ML Training Pipeline
 ==============================
 
 Trains two models:
-  1. Patient Risk Classifier  — Random Forest (supervised)
+  1. Patient Spending Risk Classifier  — Random Forest (supervised)
+     Predicts high-cost patients based on spending patterns (financial risk, not clinical)
   2. Provider Fraud Detector  — Isolation Forest (unsupervised / anomaly)
 
 Usage:
     python -m ml.train
 
 Output:
-    ml/models/patient_risk_model.joblib
+    ml/models/patient_spending_risk_model.joblib
     ml/models/provider_fraud_model.joblib
     ml/models/provider_fraud_scaler.joblib
     ml/models/provider_scores.json
@@ -42,6 +43,7 @@ from ml.features import (
     PROVIDER_FEATURES,
     build_patient_features,
     build_provider_features,
+    estimate_contamination,
     load_cleaned_data,
 )
 
@@ -52,19 +54,22 @@ MODELS_DIR.mkdir(exist_ok=True)
 # ── Model 1: Patient Risk Classifier ────────────────────────────────────────
 
 def train_patient_risk(patient_df) -> dict:
-    print("\n[1/2]  Patient Risk Classifier  (Random Forest)")
+    print("\n[1/2]  Patient Spending Risk Classifier  (Random Forest)")
     print("─" * 50)
+    print("  Stratified 80/20 split: random split stratified by target class")
 
     X = patient_df[PATIENT_FEATURES].values
-    y = patient_df["high_spender"].values
+    y = patient_df["spending_risk"].values
 
     n_pos = y.sum()
     print(f"  Patients   : {len(X):,}")
-    print(f"  High-cost  : {n_pos:,}  ({n_pos / len(y) * 100:.1f}%)")
+    print(f"  High spending-risk : {n_pos:,}  ({n_pos / len(y) * 100:.1f}%)")
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
+
+    print(f"  80/20 validation split: {len(X_train)} train, {len(X_test)} test")
 
     model = RandomForestClassifier(
         n_estimators=300,
@@ -108,6 +113,8 @@ def train_patient_risk(patient_df) -> dict:
 
     return {
         "model":             "RandomForestClassifier",
+        "target":            "spending_risk (top 25% future spending)",
+        "temporal_split":    "Earlier claims → features, later claims → target (prevents leakage)",
         "n_estimators":      300,
         "accuracy":          round(acc, 4),
         "f1_score":          round(f1, 4),
@@ -116,7 +123,7 @@ def train_patient_risk(patient_df) -> dict:
         "cv_roc_auc_std":    round(float(cv_scores.std()), 4),
         "n_train":           int(len(X_train)),
         "n_test":            int(len(X_test)),
-        "high_spender_rate": round(float(y.mean()), 4),
+        "spending_risk_rate": round(float(y.mean()), 4),
         "feature_importance": fi,
         "confusion_matrix":  cm,
         "classification_report": rep,
@@ -132,12 +139,16 @@ def train_provider_fraud(provider_df) -> tuple[dict, dict]:
     X_raw = provider_df[PROVIDER_FEATURES].values
     print(f"  Providers  : {len(X_raw):,}")
 
+    # Estimate contamination from data (IQR-based) instead of hard-coding
+    contamination = estimate_contamination(provider_df)
+    print(f"  Contamination (estimated): {contamination:.3f}")
+
     scaler = StandardScaler()
     X = scaler.fit_transform(X_raw)
 
     model = IsolationForest(
         n_estimators=300,
-        contamination=0.12,     # ~12% of providers flagged as anomalous
+        contamination=contamination,
         max_features=0.8,
         random_state=42,
         n_jobs=-1,
@@ -156,10 +167,11 @@ def train_provider_fraud(provider_df) -> tuple[dict, dict]:
     print(f"  Medium risk (40-69): {flagged_medium}")
     print(f"  Avg score  : {fraud_scores.mean():.1f}")
 
-    # Persist score lookup
+    # Build lookup without iterrows() — use vectorized zip over arrays
+    providers   = provider_df["Provider"].tolist()
     score_lookup = {
-        str(row["Provider"]): round(float(score), 1)
-        for (_, row), score in zip(provider_df.iterrows(), fraud_scores)
+        str(p): round(float(s), 1)
+        for p, s in zip(providers, fraud_scores)
     }
 
     joblib.dump(model,  MODELS_DIR / "provider_fraud_model.joblib")
@@ -168,14 +180,14 @@ def train_provider_fraud(provider_df) -> tuple[dict, dict]:
         json.dump(score_lookup, f, indent=2)
 
     metrics = {
-        "model":          "IsolationForest",
-        "n_estimators":   300,
-        "contamination":  0.12,
-        "n_providers":    int(len(X_raw)),
-        "flagged_high":   flagged_high,
-        "flagged_medium": flagged_medium,
+        "model":           "IsolationForest",
+        "n_estimators":    300,
+        "contamination":   round(contamination, 3),
+        "n_providers":     int(len(X_raw)),
+        "flagged_high":    flagged_high,
+        "flagged_medium":  flagged_medium,
         "avg_fraud_score": round(float(fraud_scores.mean()), 2),
-        "features":       PROVIDER_FEATURES,
+        "features":        PROVIDER_FEATURES,
     }
     return metrics, score_lookup
 
@@ -198,7 +210,7 @@ def main() -> None:
     provider_metrics, _scores   = train_provider_fraud(provider_df)
 
     all_metrics = {
-        "patient_risk":    patient_metrics,
+        "patient_spending_risk":    patient_metrics,
         "provider_fraud":  provider_metrics,
     }
     with open(MODELS_DIR / "metrics.json", "w") as f:

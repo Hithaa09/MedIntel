@@ -29,6 +29,17 @@ def _to_float(val, fallback=0.0):
         return fallback
 
 
+def _to_str(val) -> Optional[str]:
+    """Convert a value to str or None — handles float NaN and pd.NA safely."""
+    try:
+        if pd.isna(val):
+            return None
+    except (TypeError, ValueError):
+        pass
+    s = str(val).strip()
+    return s if s else None
+
+
 INSERT_SQL = """
 INSERT INTO healthcare_claims (
     bene_id, dob, gender, race, state,
@@ -47,25 +58,26 @@ INSERT INTO healthcare_claims (
 
 
 def load_to_oracle(df: pd.DataFrame, user: str, password: str, dsn: str) -> int:
+    # itertuples is 8-10× faster than iterrows for building batch inserts
     batch = [
         (
-            row["BeneID"],
-            _to_date(row["DOB"]),
-            _to_int(row["Gender"]),
-            _to_int(row["Race"]),
-            _to_int(row["State"]),
-            _to_int(row["ChronicCond_Diabetes"]),
-            _to_int(row["ChronicCond_Heartfailure"]),
-            row["ClaimID"],
-            _to_date(row["ClaimStartDt"]),
-            _to_date(row["ClaimEndDt"]),
-            row.get("Provider"),
-            _to_float(row["InscClaimAmtReimbursed"]),
-            row.get("AttendingPhysician"),
-            _to_date(row["AdmissionDt"]),
-            _to_date(row["DischargeDt"]),
+            _to_str(row.BeneID),
+            _to_date(row.DOB),
+            _to_int(row.Gender),
+            _to_int(row.Race),
+            _to_int(row.State),
+            _to_int(row.ChronicCond_Diabetes),
+            _to_int(row.ChronicCond_Heartfailure),
+            _to_str(row.ClaimID),
+            _to_date(row.ClaimStartDt),
+            _to_date(row.ClaimEndDt),
+            _to_str(row.Provider),
+            _to_float(row.InscClaimAmtReimbursed),
+            _to_str(row.AttendingPhysician),
+            _to_date(row.AdmissionDt),
+            _to_date(row.DischargeDt),
         )
-        for _, row in df.iterrows()
+        for row in df.itertuples(index=False)
     ]
 
     conn = oracledb.connect(user=user, password=password, dsn=dsn)
