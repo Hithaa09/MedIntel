@@ -78,10 +78,16 @@ def patient_risk(bene_id: str):
         FROM healthcare_claims
         WHERE bene_id = :bid
     """
-    with get_conn() as conn:
-        cur = conn.cursor()
-        cur.execute(sql, {"bid": bene_id.upper()})
-        row = cur.fetchone()
+    try:
+        with get_conn() as conn:
+            cur = conn.cursor()
+            cur.execute(sql, {"bid": bene_id.upper()})
+            row = cur.fetchone()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Database unavailable — start Oracle and run the ETL pipeline first.",
+        ) from exc
 
     if not row or row[0] == 0:
         raise HTTPException(status_code=404, detail=f"Patient '{bene_id}' not found")
