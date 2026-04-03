@@ -69,6 +69,8 @@ class MonthlyPoint(BaseModel):
     month_label: str
     total_claims: int
     total_reimbursed: float
+    unique_patients: int
+    avg_los_days: Optional[float]
 
 
 # ── Patient ────────────────────────────────────────────────────────────────

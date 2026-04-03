@@ -189,10 +189,11 @@ input,select{font-family:inherit;outline:none}
 .flt-label{padding:7px 10px;font-size:.78rem;font-weight:500;color:var(--t6);border-right:1px solid var(--border);white-space:nowrap}
 .flt-sel{padding:7px 28px 7px 8px;font-size:.78rem;color:var(--t9);border:none;background:transparent;cursor:pointer;appearance:none;min-width:80px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center}
 .flt-sel:focus{box-shadow:none}
+.flt-date{padding:7px 8px;font-size:.78rem;color:var(--t9);border:none;background:transparent;cursor:pointer;min-width:112px;}
+.flt-date::-webkit-calendar-picker-indicator{opacity:.45;cursor:pointer}
+.flt-date:focus{box-shadow:none;outline:none}
 .btn-reset{padding:7px 12px;font-size:.78rem;color:var(--pk);font-weight:500;background:none;border:none;cursor:pointer;transition:color .15s}
 .btn-reset:hover{color:var(--pk-h)}
-.btn-moreflt{display:flex;align-items:center;gap:5px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:.78rem;color:var(--t6);background:#fff;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
-.btn-moreflt:hover{border-color:var(--pk);color:var(--pk)}
 
 /* ── Buttons ── */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:.875rem;font-weight:500;cursor:pointer;transition:all .15s;border:none}
@@ -363,7 +364,7 @@ input,select{font-family:inherit;outline:none}
         <div class="glass-stat">
           <div style="color:rgba(255,255,255,.45);font-size:.7rem;margin-bottom:4px;">Total Reimbursed</div>
           <div style="color:#fff;font-size:1.5rem;font-weight:800;" id="lp-reimb">$2.82M</div>
-          <div style="color:var(--paid);font-size:.73rem;margin-top:3px;">↑ 12.4% vs previous period</div>
+          <div style="color:var(--paid);font-size:.73rem;margin-top:3px;">Medicare inpatient reimbursements</div>
         </div>
       </div>
     </div>
@@ -377,10 +378,10 @@ input,select{font-family:inherit;outline:none}
         <p style="font-size:.85rem;color:var(--t4);">Sign in to continue to your dashboard</p>
       </div>
 
-      <!-- Demo hint -->
+      <!-- Demo hint — updates when role changes -->
       <div style="background:var(--pk-tint);border:1px solid rgba(233,30,99,.25);border-radius:9px;padding:10px 13px;margin-bottom:22px;font-size:.8rem;">
         <span style="color:var(--pk);font-weight:600;">Demo:</span>
-        <span style="color:var(--t6);"> demo@medintel.io · demo1234</span>
+        <span id="demo-hint" style="color:var(--t6);"> demo@medintel.io · demo1234</span>
       </div>
 
       <form onsubmit="doLogin(event)">
@@ -405,9 +406,8 @@ input,select{font-family:inherit;outline:none}
         <div class="input-wrap">
           <label class="input-label">Role</label>
           <div class="role-pills">
-            <label class="role-pill"><input type="radio" name="role" value="Admin"/>👑 Admin</label>
-            <label class="role-pill"><input type="radio" name="role" value="Analyst" checked/>🔍 Analyst</label>
-            <label class="role-pill"><input type="radio" name="role" value="Viewer"/>👁 Viewer</label>
+            <label class="role-pill"><input type="radio" name="role" value="Admin" onchange="updateDemoHint('Admin')"/>👑 Admin</label>
+            <label class="role-pill"><input type="radio" name="role" value="Analyst" checked onchange="updateDemoHint('Analyst')"/>🔍 Analyst</label>
           </div>
         </div>
 
@@ -416,7 +416,6 @@ input,select{font-family:inherit;outline:none}
             <input id="login-remember" type="checkbox" checked style="accent-color:var(--pk);width:14px;height:14px;"/>
             Remember me
           </label>
-          <span style="font-size:.82rem;color:var(--pk);font-weight:500;cursor:pointer;">Forgot password?</span>
         </div>
 
         <div id="login-err" style="display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:9px 12px;font-size:.82rem;color:var(--deny);margin-bottom:14px;"></div>
@@ -424,18 +423,6 @@ input,select{font-family:inherit;outline:none}
         <button type="submit" class="btn btn-pk" style="width:100%;justify-content:center;padding:11px;font-size:.95rem;border-radius:9px;margin-bottom:14px;">Sign in</button>
       </form>
 
-      <div class="divider"><span>or continue with</span></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
-        <button class="social-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-          Google
-        </button>
-        <button class="social-btn">
-          <svg width="16" height="16" viewBox="0 0 23 23"><rect x="1" y="1" width="10" height="10" fill="#f25022"/><rect x="12" y="1" width="10" height="10" fill="#7fba00"/><rect x="1" y="12" width="10" height="10" fill="#00a4ef"/><rect x="12" y="12" width="10" height="10" fill="#ffb900"/></svg>
-          Microsoft
-        </button>
-      </div>
-      <p style="text-align:center;font-size:.82rem;color:var(--t4);">Don't have an account? <span style="color:var(--pk);font-weight:500;cursor:pointer;">Sign up</span></p>
     </div>
   </div>
 </div>
@@ -489,15 +476,6 @@ input,select{font-family:inherit;outline:none}
         <span class="nav-label">Insights</span>
       </div>
 
-      <div class="sb-section nav-label" style="margin-top:8px;">Settings</div>
-      <div class="nav-item" data-page="users" onclick="navigate('users')">
-        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-        <span class="nav-label">Users &amp; Roles</span>
-      </div>
-      <div class="nav-item" data-page="settings" onclick="navigate('settings')">
-        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
-        <span class="nav-label">Settings</span>
-      </div>
     </nav>
 
     <div class="sb-user">
@@ -524,7 +502,7 @@ input,select{font-family:inherit;outline:none}
         <span class="search-icon-pos">
           <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/></svg>
         </span>
-        <input class="topbar-search" id="g-search" placeholder="Search claims, patients, providers…" oninput="onSearch(this.value)" onblur="setTimeout(()=>{if(!_searchLoading)$('search-drop').style.display='none'},250)" onfocus="if(this.value.length>=2&&$('search-drop').innerHTML)$('search-drop').style.display=''"/>
+        <input class="topbar-search" id="g-search" placeholder="Search claims, patients, providers…" oninput="onSearch(this.value)" onblur="setTimeout(()=>{if(!_searchLoading)$('search-drop').style.display='none'},250)" onfocus="if(this.value.length>=2&&$('search-drop').innerHTML)$('search-drop').style.display='block'"/>
         <div id="search-drop"></div>
       </div>
 
@@ -584,7 +562,7 @@ input,select{font-family:inherit;outline:none}
             <div class="kpi-val" id="kv-claims">—</div>
             <div class="kpi-bottom">
               <div>
-                <div class="kpi-change up" id="kc-claims">↑ 12.4%</div>
+                <div class="kpi-change up" id="kc-claims" style="display:none"></div>
                 <div class="kpi-sub">vs previous period</div>
               </div>
               <div class="sparkline-wrap"><canvas id="sp-claims"></canvas></div>
@@ -601,7 +579,7 @@ input,select{font-family:inherit;outline:none}
             <div class="kpi-val" id="kv-patients">—</div>
             <div class="kpi-bottom">
               <div>
-                <div class="kpi-change up" id="kc-patients">↑ 9.8%</div>
+                <div class="kpi-change up" id="kc-patients" style="display:none"></div>
                 <div class="kpi-sub">vs previous period</div>
               </div>
               <div class="sparkline-wrap"><canvas id="sp-patients"></canvas></div>
@@ -616,7 +594,7 @@ input,select{font-family:inherit;outline:none}
             <div class="kpi-val" id="kv-reimb">—</div>
             <div class="kpi-bottom">
               <div>
-                <div class="kpi-change up" id="kc-reimb">↑ 15.3%</div>
+                <div class="kpi-change up" id="kc-reimb" style="display:none"></div>
                 <div class="kpi-sub">vs previous period</div>
               </div>
               <div class="sparkline-wrap"><canvas id="sp-reimb"></canvas></div>
@@ -633,7 +611,7 @@ input,select{font-family:inherit;outline:none}
             <div class="kpi-val" id="kv-los">—</div>
             <div class="kpi-bottom">
               <div>
-                <div class="kpi-change dn" id="kc-los">↓ 3.2%</div>
+                <div class="kpi-change dn" id="kc-los" style="display:none"></div>
                 <div class="kpi-sub">vs previous period</div>
               </div>
               <div class="sparkline-wrap"><canvas id="sp-los"></canvas></div>
@@ -757,10 +735,14 @@ input,select{font-family:inherit;outline:none}
               <option value="">All States</option>
             </select>
           </div>
-          <button class="btn-moreflt">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/></svg>
-            More Filters
-          </button>
+          <div class="flt-group">
+            <span class="flt-label">From</span>
+            <input type="date" class="flt-date" id="f-date-from" onchange="applyFilters()"/>
+          </div>
+          <div class="flt-group">
+            <span class="flt-label">To</span>
+            <input type="date" class="flt-date" id="f-date-to" onchange="applyFilters()"/>
+          </div>
           <button class="btn-reset" onclick="resetFilters()">Reset</button>
         </div>
 
@@ -1001,10 +983,16 @@ input,select{font-family:inherit;outline:none}
         <div class="grid-2" style="margin-bottom:16px;">
           <div class="card card-pad">
             <div class="card-title" style="margin-bottom:14px;">API Connection</div>
-            <div class="stat-row"><span class="stat-row-label">API Base URL</span><span class="stat-row-val" style="font-family:monospace;font-size:.78rem;">http://localhost:8000/api</span></div>
+            <div class="stat-row" style="align-items:flex-start;flex-direction:column;gap:6px;">
+              <span class="stat-row-label">API Base URL</span>
+              <div style="display:flex;gap:6px;width:100%;">
+                <input id="set-api-url" style="flex:1;font-family:monospace;font-size:.78rem;padding:5px 8px;border:1px solid var(--border);border-radius:6px;color:var(--t9);" placeholder="https://your-api.onrender.com/api"/>
+                <button onclick="saveApiUrl()" style="padding:5px 12px;background:var(--pk);color:#fff;border:none;border-radius:6px;font-size:.78rem;cursor:pointer;">Save</button>
+              </div>
+            </div>
             <div class="stat-row"><span class="stat-row-label">Status</span><span id="set-api-status">—</span></div>
             <div class="stat-row"><span class="stat-row-label">Version</span><span class="stat-row-val" id="set-api-version">—</span></div>
-            <div class="stat-row"><span class="stat-row-label">Database</span><span class="stat-row-val">Oracle XE 21c · XEPDB1</span></div>
+            <div class="stat-row"><span class="stat-row-label">Database</span><span class="stat-row-val">PostgreSQL</span></div>
           </div>
           <div class="card card-pad">
             <div class="card-title" style="margin-bottom:14px;">Authentication</div>
@@ -1051,7 +1039,10 @@ input,select{font-family:inherit;outline:none}
 ════════════════════════════════════════════════════════ -->
 <script>
 // ── Config ──────────────────────────────────────────────────
-const API = 'http://localhost:8000/api';
+const _defaultApi = (window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1')
+  ? 'http://localhost:8000/api'
+  : (localStorage.getItem('mi-api-url')||'http://localhost:8000/api');
+let API = localStorage.getItem('mi-api-url') || _defaultApi;
 
 // ── State ────────────────────────────────────────────────────
 const S = {
@@ -1061,10 +1052,33 @@ const S = {
   charts: {},
   claimsPageSize: 20,
   claimsFilters: {},
-  allClaims:  null,
+  allClaims:   null,
   allPatients: null,
   overviewLoaded: false,
+  summary:     null,
+  conds:       null,
+  fraudScores: null,
 };
+
+// Compare second-half average vs first-half average of a monthly metric (% change)
+function periodChange(monthly, field, avg=false){
+  if(!monthly||monthly.length<2)return null;
+  const half=Math.floor(monthly.length/2);
+  const s1=monthly.slice(0,half), s2=monthly.slice(half);
+  const get=arr=>avg
+    ?(arr.map(m=>m[field]).filter(v=>v!=null).reduce((a,b)=>a+b,0)/arr.filter(m=>m[field]!=null).length||0)
+    :arr.reduce((a,m)=>a+(m[field]||0),0);
+  const v1=get(s1),v2=get(s2);
+  return v1?((v2-v1)/v1*100):null;
+}
+function renderKpiChange(id,pct){
+  const el=$(id);if(!el)return;
+  if(pct==null){el.style.display='none';return;}
+  const up=pct>=0;
+  el.className='kpi-change '+(up?'up':'dn');
+  el.textContent=(up?'↑ ':'↓ ')+Math.abs(pct).toFixed(1)+'%';
+  el.style.display='';
+}
 
 // ── State names ──────────────────────────────────────────────
 const STATES = {1:'Alabama',2:'Alaska',3:'Arizona',4:'Arkansas',5:'California',6:'Colorado',7:'Connecticut',8:'Delaware',9:'DC',10:'Florida',11:'Georgia',12:'Hawaii',13:'Idaho',14:'Illinois',15:'Indiana',16:'Iowa',17:'Kansas',18:'Kentucky',19:'Louisiana',20:'Maine',21:'Maryland',22:'Massachusetts',23:'Michigan',24:'Minnesota',25:'Mississippi',26:'Missouri',27:'Montana',28:'Nebraska',29:'Nevada',30:'New Hampshire',31:'New Jersey',32:'New Mexico',33:'New York',34:'North Carolina',35:'North Dakota',36:'Ohio',37:'Oklahoma',38:'Oregon',39:'Pennsylvania',40:'Rhode Island',41:'South Carolina',42:'South Dakota',43:'Tennessee',44:'Texas',45:'Utah',46:'Vermont',47:'Virginia',48:'Washington',49:'West Virginia',50:'Wisconsin',51:'Wyoming'};
@@ -1165,6 +1179,16 @@ async function doLogin(e){
   }
 }
 function togglePass(){const i=$('login-pass');i.type=i.type==='password'?'text':'password';}
+
+function updateDemoHint(role){
+  const CREDS={Admin:'admin@medintel.io · admin1234', Analyst:'demo@medintel.io · demo1234'};
+  const EMAILS={Admin:'admin@medintel.io', Analyst:'demo@medintel.io'};
+  const PASSES={Admin:'admin1234', Analyst:'demo1234'};
+  const hint=$('demo-hint');
+  if(hint) hint.textContent=' '+CREDS[role];
+  const emailEl=$('login-email'); if(emailEl) emailEl.value=EMAILS[role];
+  const passEl=$('login-pass');  if(passEl)  passEl.value=PASSES[role];
+}
 function doLogout(){
   ['mi-token','mi-user'].forEach(k=>{localStorage.removeItem(k);sessionStorage.removeItem(k);});
   S.token=null; S.user=null; S.overviewLoaded=false; S.allClaims=null; S.allPatients=null;
@@ -1244,24 +1268,35 @@ async function loadOverview(){
       apiFetch('/claims?page_size=5'),
     ]);
 
+    // Cache for notifications and other pages
+    S.summary=summary; S.conds=conds;
+
     // KPIs
     $('kv-claims').textContent=fmt(summary.total_claims);
     $('kv-patients').textContent=fmt(summary.unique_patients);
     $('kv-reimb').textContent=fmtM(summary.total_reimbursed);
     $('kv-los').textContent=summary.avg_los_days!=null?fmt(summary.avg_los_days,2):'—';
 
+    // KPI period-over-period change badges (computed from monthly trend)
+    renderKpiChange('kc-claims', periodChange(monthly,'total_claims'));
+    renderKpiChange('kc-patients', periodChange(monthly,'unique_patients'));
+    renderKpiChange('kc-reimb', periodChange(monthly,'total_reimbursed'));
+    renderKpiChange('kc-los', periodChange(monthly,'avg_los_days',true));
+
     // Login stats
     $('lp-claims').textContent=fmt(summary.total_claims)+'+';
     $('lp-reimb').textContent=fmtM(summary.total_reimbursed);
 
-    // Sparklines from monthly data
+    // Sparklines from monthly data (all fields now real)
     const mVals=monthly.map(m=>m.total_claims);
     const rVals=monthly.map(m=>m.total_reimbursed);
+    const pVals=monthly.map(m=>m.unique_patients||0);
+    const losVals=monthly.map(m=>m.avg_los_days||0);
     if(mVals.length){
       drawSparkline('sp-claims',mVals,'#e91e63');
-      drawSparkline('sp-patients',mVals.map(v=>Math.round(v*.75)),'#3b82f6');
+      drawSparkline('sp-patients',pVals,'#3b82f6');
       drawSparkline('sp-reimb',rVals,'#22c55e');
-      drawSparkline('sp-los',monthly.map(()=>4+Math.random()),'#f59e0b');
+      drawSparkline('sp-los',losVals,'#f59e0b');
     }
 
     // Monthly chart
@@ -1332,7 +1367,7 @@ async function loadOverview(){
     const highRiskPct=total?((conds.both_conditions/total)*100).toFixed(1):'—';
     const bestMonth=monthly.reduce((a,b)=>a.total_claims>b.total_claims?a:b,monthly[0]);
     const insightsData=[
-      {bg:'rgba(34,197,94,.12)',color:'#22c55e',svg:`<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#22c55e" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,text:`Total reimbursement reached <strong>${fmtM(summary.total_reimbursed)}</strong>, up <strong>15.3%</strong> compared to the previous period.`},
+      {bg:'rgba(34,197,94,.12)',color:'#22c55e',svg:`<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#22c55e" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,text:(()=>{const ch=periodChange(monthly,'total_reimbursed');return`Total reimbursement reached <strong>${fmtM(summary.total_reimbursed)}</strong>${ch!=null?`, ${ch>=0?'up':'down'} <strong>${Math.abs(ch).toFixed(1)}%</strong> vs the prior half-period`:''}.`})()},
       {bg:'rgba(245,158,11,.12)',color:'#f59e0b',svg:`<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,text:`Heart failure patients have an average stay <strong>${summary.avg_los_days?fmt(summary.avg_los_days,1)+' days':'N/A'}</strong> per admission.`},
       {bg:'rgba(59,130,246,.12)',color:'#3b82f6',svg:`<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#3b82f6" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`,text:`<strong>${topState?stateName(topState.state):'—'}</strong> processed the highest number of claims this period.`},
       {bg:'rgba(233,30,99,.12)',color:'#e91e63',svg:`<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#e91e63" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`,text:`High-risk patients (both conditions) made up <strong>${highRiskPct}%</strong> of total claims.`},
@@ -1378,7 +1413,7 @@ async function initFilterDropdowns(){
 // ── Claims ───────────────────────────────────────────────────
 function applyFilters(){claimsPage=1;loadClaims();}
 function resetFilters(){
-  ['f-gender','f-diabetes','f-hf','f-provider','f-state'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  ['f-gender','f-diabetes','f-hf','f-provider','f-state','f-date-from','f-date-to'].forEach(id=>{const el=$(id);if(el)el.value='';});
   claimsPage=1;loadClaims();
 }
 function changePageSize(){S.claimsPageSize=parseInt($('page-size-sel').value);claimsPage=1;loadClaims();}
@@ -1388,11 +1423,14 @@ async function loadClaims(){
   $('claims-tbl-wrap').style.display='none';
   const p=new URLSearchParams({page:claimsPage,page_size:S.claimsPageSize||20});
   const g=$('f-gender')?.value, d=$('f-diabetes')?.value, hf=$('f-hf')?.value, prov=$('f-provider')?.value, st=$('f-state')?.value;
+  const df=$('f-date-from')?.value, dt=$('f-date-to')?.value;
   if(g)p.append('gender',g);
   if(d)p.append('diabetes',d);
   if(hf)p.append('heartfailure',hf);
   if(prov)p.append('provider',prov);
   if(st)p.append('state',st);
+  if(df)p.append('date_from',df);
+  if(dt)p.append('date_to',dt);
   try{
     const data=await apiFetch('/claims?'+p);
     renderClaimsTable(data);
@@ -1718,7 +1756,7 @@ function onSearch(q){
 async function runSearch(q){
   const dd=$('search-drop');
   dd.innerHTML='<div class="sdr-item"><span style="color:var(--t4);font-size:.82rem;">Searching…</span></div>';
-  dd.style.display='';
+  dd.style.display='block';
   _searchLoading=true;
   try{
     if(!S.allClaims){
@@ -1727,6 +1765,7 @@ async function runSearch(q){
     }
   }catch(e){
     dd.innerHTML='<div class="sdr-item"><span style="color:var(--t4);font-size:.82rem;">Search unavailable — API error</span></div>';
+    dd.style.display='block';
     _searchLoading=false;
     return;
   }
@@ -1747,14 +1786,14 @@ async function runSearch(q){
   S.allClaims.filter(c=>c.bene_id.includes(qu)).slice(0,3).forEach(c=>{
     results.push({tag:'PATIENT',primary:c.bene_id,secondary:patientName(c.bene_id,c.gender)+' · '+stateName(c.state),action:()=>openPanel(c.bene_id)});
   });
-  if(!results.length){dd.innerHTML='<div class="sdr-item"><span style="color:var(--t4);font-size:.82rem;">No results found</span></div>';dd.style.display='';return;}
+  if(!results.length){dd.innerHTML='<div class="sdr-item"><span style="color:var(--t4);font-size:.82rem;">No results found</span></div>';dd.style.display='block';return;}
   dd.innerHTML=results.map((r,i)=>`
     <div class="sdr-item" onclick="srClick(${i})">
       <span class="sdr-tag">${r.tag}</span>
       <div><div style="font-weight:600;">${r.primary}</div><div style="font-size:.75rem;color:var(--t4);">${r.secondary}</div></div>
     </div>`).join('');
   dd._results=results;
-  dd.style.display='';
+  dd.style.display='block';
 }
 function srClick(i){const r=$('search-drop')._results?.[i];if(r){r.action();$('search-drop').style.display='none';$('g-search').value='';}}
 
@@ -1785,11 +1824,13 @@ function toggleNotifDrop(){
 }
 function buildNotifs(){
   const notifs=[];
-  // Build alerts from live data where available
-  if(S.overviewLoaded){
-    notifs.push({color:'#ef4444',title:'High-Risk Patients Detected',sub:'596 patients have both diabetes & heart failure'});
-    notifs.push({color:'#f59e0b',title:'Fraud Risk Alert',sub:'Top provider fraud score: 100.0 — review PRV52302'});
-    notifs.push({color:'#3b82f6',title:'Claims Loaded',sub:'1,000 Medicare inpatient claims ready for analysis'});
+  if(S.overviewLoaded&&S.summary){
+    const both=S.conds?.both_conditions;
+    if(both!=null) notifs.push({color:'#ef4444',title:'High-Risk Patients Detected',sub:`${fmt(both)} patients have both diabetes & heart failure`});
+    const topF=S.fraudScores?.[0];
+    if(topF) notifs.push({color:'#f59e0b',title:'Fraud Risk Alert',sub:`Top provider: ${topF.provider} — score ${topF.fraud_risk_score}`});
+    else notifs.push({color:'#f59e0b',title:'Fraud Analysis',sub:'Open Insights page to load fraud scores'});
+    notifs.push({color:'#3b82f6',title:'Claims Loaded',sub:`${fmt(S.summary.total_claims)} Medicare inpatient claims ready`});
     notifs.push({color:'#22c55e',title:'ML Models Active',sub:'Risk & fraud models trained — predictions live'});
   }else{
     notifs.push({color:'#3b82f6',title:'Welcome to MedIntel',sub:'Load the Overview page to generate live alerts'});
@@ -1840,6 +1881,7 @@ async function loadInsights(){
       apiFetch('/analytics/conditions'),
       apiFetch('/ml/metrics').catch(()=>null),
     ]);
+    S.fraudScores=fraudScores;
     const highFraud=fraudScores.filter(f=>f.risk_level==='High');
     const medFraud=fraudScores.filter(f=>f.risk_level==='Medium');
     const highRiskPct=summary.total_claims?((conds.both_conditions/summary.total_claims)*100).toFixed(1):'—';
@@ -1896,7 +1938,7 @@ async function loadInsights(){
           <div class="stat-row"><span class="stat-row-label">Flagged high-risk</span><span class="stat-row-val">${fmt(pf?.flagged_high)}</span></div>
           <div class="stat-row"><span class="stat-row-label">Flagged medium-risk</span><span class="stat-row-val">${fmt(pf?.flagged_medium)}</span></div>
           <div class="stat-row"><span class="stat-row-label">Avg fraud score</span><span class="stat-row-val">${pf?.avg_fraud_score}</span></div>
-          <div class="stat-row"><span class="stat-row-label">Contamination rate</span><span class="stat-row-val">12%</span></div>
+          <div class="stat-row"><span class="stat-row-label">Contamination rate</span><span class="stat-row-val">${pf?.contamination!=null?((pf.contamination*100).toFixed(1)+'%'):'—'}</span></div>
         </div>
       </div>
       ${pr.feature_importance?`
@@ -1923,7 +1965,16 @@ async function loadInsights(){
 }
 
 // ── Settings ───────────────────────────────────────────────────
+function saveApiUrl(){
+  const val=$('set-api-url').value.trim().replace(/\/$/,'');
+  if(!val)return;
+  localStorage.setItem('mi-api-url',val);
+  API=val;
+  alert('API URL saved. Reloading…');
+  location.reload();
+}
 async function loadSettings(){
+  $('set-api-url').value=API;
   try{
     const health=await apiFetch('/health');
     $('set-api-version').textContent=health.version||'—';

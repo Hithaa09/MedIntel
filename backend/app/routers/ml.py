@@ -76,7 +76,7 @@ def patient_risk(bene_id: str):
             MAX(CASE WHEN chroniccond_diabetes    = 1 THEN 1 ELSE 0 END) AS has_diabetes,
             MAX(CASE WHEN chroniccond_heartfailure = 1 THEN 1 ELSE 0 END) AS has_heartfailure
         FROM healthcare_claims
-        WHERE bene_id = :bid
+        WHERE bene_id = %(bid)s
     """
     try:
         with get_conn() as conn:

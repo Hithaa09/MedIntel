@@ -15,8 +15,8 @@ def summary():
             COUNT(*)                                    AS total_claims,
             COUNT(DISTINCT bene_id)                     AS unique_patients,
             SUM(inscclaimamtreimbursed)                 AS total_reimbursed,
-            ROUND(AVG(inscclaimamtreimbursed), 2)       AS avg_reimbursed,
-            ROUND(AVG(dischargedt - admissiondt), 1)    AS avg_los_days
+            ROUND(AVG(inscclaimamtreimbursed)::numeric, 2) AS avg_reimbursed,
+            ROUND(AVG(dischargedt - admissiondt)::numeric, 1) AS avg_los_days
         FROM healthcare_claims
     """
     with get_conn() as conn:
@@ -41,7 +41,7 @@ def by_state():
         FROM   healthcare_claims
         GROUP  BY state
         ORDER  BY total_claims DESC
-        FETCH FIRST 20 ROWS ONLY
+        LIMIT  20
     """
     with get_conn() as conn:
         cur = conn.cursor()
@@ -82,16 +82,16 @@ def conditions():
 def top_providers(limit: int = 10):
     sql = """
         SELECT provider,
-               COUNT(*)                                    AS total_claims,
-               COUNT(DISTINCT bene_id)                     AS unique_patients,
-               SUM(inscclaimamtreimbursed)                 AS total_reimbursed,
-               ROUND(AVG(inscclaimamtreimbursed), 2)       AS avg_reimbursed,
-               ROUND(AVG(dischargedt - admissiondt), 1)   AS avg_los_days
+               COUNT(*)                                       AS total_claims,
+               COUNT(DISTINCT bene_id)                        AS unique_patients,
+               SUM(inscclaimamtreimbursed)                    AS total_reimbursed,
+               ROUND(AVG(inscclaimamtreimbursed)::numeric, 2) AS avg_reimbursed,
+               ROUND(AVG(dischargedt - admissiondt)::numeric, 1) AS avg_los_days
         FROM   healthcare_claims
         WHERE  provider IS NOT NULL
         GROUP  BY provider
         ORDER  BY total_claims DESC
-        FETCH FIRST :lim ROWS ONLY
+        LIMIT  %(lim)s
     """
     with get_conn() as conn:
         cur = conn.cursor()
@@ -113,9 +113,11 @@ def top_providers(limit: int = 10):
 @router.get("/monthly-trend", response_model=list[MonthlyPoint], summary="Monthly claim volume and spend")
 def monthly_trend():
     sql = """
-        SELECT TO_CHAR(claimstartdt, 'YYYY-MM') AS month_label,
-               COUNT(*)                          AS total_claims,
-               SUM(inscclaimamtreimbursed)       AS total_reimbursed
+        SELECT TO_CHAR(claimstartdt, 'YYYY-MM')                  AS month_label,
+               COUNT(*)                                           AS total_claims,
+               SUM(inscclaimamtreimbursed)                        AS total_reimbursed,
+               COUNT(DISTINCT bene_id)                            AS unique_patients,
+               ROUND(AVG(dischargedt - admissiondt)::numeric, 1)  AS avg_los_days
         FROM   healthcare_claims
         WHERE  claimstartdt IS NOT NULL
         GROUP  BY TO_CHAR(claimstartdt, 'YYYY-MM')
@@ -130,6 +132,8 @@ def monthly_trend():
             month_label=r[0],
             total_claims=r[1],
             total_reimbursed=float(r[2] or 0),
+            unique_patients=r[3] or 0,
+            avg_los_days=float(r[4]) if r[4] is not None else None,
         )
         for r in rows
     ]

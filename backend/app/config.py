@@ -3,9 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # ── Database ─────────────────────────────────────────────
-    db_user: str = "APP"
-    db_pass: str = "app"
-    db_dsn: str  = "localhost:1521/XEPDB1"
+    database_url: str = "postgresql://postgres:postgres@localhost:5432/medintel"
     db_pool_min: int = 2
     db_pool_max: int = 10
 
@@ -15,9 +13,6 @@ class Settings(BaseSettings):
     jwt_expire_hours: int = 24
 
     # ── CORS ─────────────────────────────────────────────────
-    # Stored as a plain comma-separated string so pydantic-settings
-    # never attempts JSON parsing (which breaks on bare URLs).
-    # Call settings.cors_list to get the parsed list[str].
     cors_origins: str = (
         "http://localhost:5500,"
         "http://127.0.0.1:5500,"

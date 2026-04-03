@@ -67,7 +67,7 @@ def authenticate_user(email: str, password: str) -> Optional[dict]:
             cur.execute(
                 "SELECT email, name, role, password_hash "
                 "FROM app_users "
-                "WHERE LOWER(email) = :email AND is_active = 1",
+                "WHERE LOWER(email) = %(email)s AND is_active = 1",
                 {"email": email_key},
             )
             row = cur.fetchone()

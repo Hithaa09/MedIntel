@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -47,18 +48,24 @@ def list_claims(
     provider: Optional[str] = Query(None),
     diabetes: Optional[int] = Query(None, ge=1, le=2),
     heartfailure: Optional[int] = Query(None, ge=1, le=2),
+    date_from: Optional[date] = Query(None, description="Filter claims starting on or after this date (YYYY-MM-DD)"),
+    date_to: Optional[date] = Query(None, description="Filter claims starting on or before this date (YYYY-MM-DD)"),
 ):
     filters, params = [], {}
     if state is not None:
-        filters.append("state = :state"); params["state"] = state
+        filters.append("state = %(state)s"); params["state"] = state
     if gender is not None:
-        filters.append("gender = :gender"); params["gender"] = gender
+        filters.append("gender = %(gender)s"); params["gender"] = gender
     if provider:
-        filters.append("provider = :provider"); params["provider"] = provider.upper()
+        filters.append("provider = %(provider)s"); params["provider"] = provider.upper()
     if diabetes is not None:
-        filters.append("chroniccond_diabetes = :diabetes"); params["diabetes"] = diabetes
+        filters.append("chroniccond_diabetes = %(diabetes)s"); params["diabetes"] = diabetes
     if heartfailure is not None:
-        filters.append("chroniccond_heartfailure = :hf"); params["hf"] = heartfailure
+        filters.append("chroniccond_heartfailure = %(hf)s"); params["hf"] = heartfailure
+    if date_from is not None:
+        filters.append("claimstartdt >= %(date_from)s"); params["date_from"] = date_from
+    if date_to is not None:
+        filters.append("claimstartdt <= %(date_to)s"); params["date_to"] = date_to
 
     where = ("WHERE " + " AND ".join(filters)) if filters else ""
 
@@ -71,7 +78,7 @@ def list_claims(
         total = cur.fetchone()[0]
 
         cur.execute(
-            f"{_SELECT} {where} ORDER BY id OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY",
+            f"{_SELECT} {where} ORDER BY id LIMIT %(limit)s OFFSET %(offset)s",
             page_params,
         )
         items = [_row_to_claim(r) for r in cur.fetchall()]
@@ -83,7 +90,7 @@ def list_claims(
 def get_claim(claim_id: str):
     with get_conn() as conn:
         cur = conn.cursor()
-        cur.execute(f"{_SELECT} WHERE claim_id = :cid", {"cid": claim_id.upper()})
+        cur.execute(f"{_SELECT} WHERE claim_id = %(cid)s", {"cid": claim_id.upper()})
         row = cur.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail=f"Claim '{claim_id}' not found")
