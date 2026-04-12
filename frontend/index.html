@@ -1041,7 +1041,7 @@ input,select{font-family:inherit;outline:none}
 // ── Config ──────────────────────────────────────────────────
 const _defaultApi = (window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1')
   ? 'http://localhost:8000/api'
-  : (localStorage.getItem('mi-api-url')||'http://localhost:8000/api');
+  : 'https://medintel-api-8hph.onrender.com/api';
 let API = localStorage.getItem('mi-api-url') || _defaultApi;
 
 // ── State ────────────────────────────────────────────────────
