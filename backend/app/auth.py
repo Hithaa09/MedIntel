@@ -53,13 +53,19 @@ _DEMO = {
 
 def authenticate_user(email: str, password: str) -> Optional[dict]:
     """
-    Authenticate against Oracle app_users table (production).
-    Falls back to _DEMO credentials when Oracle is unavailable (demo mode).
-    Returns user dict on success, None on failure.
+    For demo accounts: always authenticate against hardcoded credentials.
+    For other accounts: query the database.
     """
     email_key = email.lower().strip()
 
-    # ── Oracle path (production) ──────────────────────────────────────────────
+    # ── Demo accounts always use hardcoded credentials ────────────────────────
+    demo = _DEMO.get(email_key)
+    if demo:
+        if not _verify(password, demo["hashed"]):
+            return None
+        return {"email": email_key, "name": demo["name"], "role": demo["role"]}
+
+    # ── Non-demo accounts: query database ────────────────────────────────────
     try:
         from .database import get_conn
         with get_conn() as conn:
@@ -79,13 +85,9 @@ def authenticate_user(email: str, password: str) -> Optional[dict]:
                 else None
             )
     except Exception:
-        pass  # Oracle not reachable — fall through to demo mode
+        pass
 
-    # ── Demo fallback ─────────────────────────────────────────────────────────
-    demo = _DEMO.get(email_key)
-    if not demo or not _verify(password, demo["hashed"]):
-        return None
-    return {"email": email_key, "name": demo["name"], "role": demo["role"]}
+    return None
 
 
 # ── Token ─────────────────────────────────────────────────────────────────────
