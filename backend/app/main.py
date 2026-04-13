@@ -43,8 +43,8 @@ CREATE TABLE IF NOT EXISTS app_users (
 """
 
 DEMO_USERS = [
-    ("demo@medintel.io",  "Dr. Olivia Carter", "Analyst", "demo1234"),
-    ("admin@medintel.io", "Admin User",         "Admin",   "admin1234"),
+    ("demo@medintel.io",  "Dr. Olivia Carter", "Analyst", "Demo@MedI24"),
+    ("admin@medintel.io", "Admin User",         "Admin",   "Admin@MedI24"),
 ]
 
 
@@ -56,7 +56,8 @@ def _seed_users(cur):
             """
             INSERT INTO app_users (email, name, role, password_hash, is_active)
             VALUES (%s, %s, %s, %s, 1)
-            ON CONFLICT (email) DO NOTHING
+            ON CONFLICT (email) DO UPDATE
+              SET password_hash=EXCLUDED.password_hash, is_active=1
             """,
             (email, name, role, pw_hash),
         )

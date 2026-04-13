@@ -381,7 +381,7 @@ input,select{font-family:inherit;outline:none}
       <!-- Demo hint — updates when role changes -->
       <div style="background:var(--pk-tint);border:1px solid rgba(233,30,99,.25);border-radius:9px;padding:10px 13px;margin-bottom:22px;font-size:.8rem;">
         <span style="color:var(--pk);font-weight:600;">Demo:</span>
-        <span id="demo-hint" style="color:var(--t6);"> demo@medintel.io · demo1234</span>
+        <span id="demo-hint" style="color:var(--t6);"> demo@medintel.io · Demo@MedI24</span>
       </div>
 
       <form onsubmit="doLogin(event)">
@@ -392,7 +392,7 @@ input,select{font-family:inherit;outline:none}
         <div class="input-wrap">
           <label class="input-label">Password</label>
           <div class="inp-icon-wrap">
-            <input id="login-pass" type="password" class="inp" placeholder="••••••••" value="demo1234" required/>
+            <input id="login-pass" type="password" class="inp" placeholder="••••••••" value="Demo@MedI24" required/>
             <button type="button" class="inp-toggle" onclick="togglePass()">
               <svg id="eye-icon" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -1181,9 +1181,9 @@ async function doLogin(e){
 function togglePass(){const i=$('login-pass');i.type=i.type==='password'?'text':'password';}
 
 function updateDemoHint(role){
-  const CREDS={Admin:'admin@medintel.io · admin1234', Analyst:'demo@medintel.io · demo1234'};
+  const CREDS={Admin:'admin@medintel.io · Admin@MedI24', Analyst:'demo@medintel.io · Demo@MedI24'};
   const EMAILS={Admin:'admin@medintel.io', Analyst:'demo@medintel.io'};
-  const PASSES={Admin:'admin1234', Analyst:'demo1234'};
+  const PASSES={Admin:'Admin@MedI24', Analyst:'Demo@MedI24'};
   const hint=$('demo-hint');
   if(hint) hint.textContent=' '+CREDS[role];
   const emailEl=$('login-email'); if(emailEl) emailEl.value=EMAILS[role];

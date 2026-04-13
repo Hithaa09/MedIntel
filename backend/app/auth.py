@@ -39,12 +39,12 @@ _DEMO = {
     "demo@medintel.io": {
         "name":  "Dr. Olivia Carter",
         "role":  "Analyst",
-        "hashed": _hash("demo1234"),
+        "hashed": _hash("Demo@MedI24"),
     },
     "admin@medintel.io": {
         "name":  "Admin User",
         "role":  "Admin",
-        "hashed": _hash("admin1234"),
+        "hashed": _hash("Admin@MedI24"),
     },
 }
 
