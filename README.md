@@ -14,6 +14,19 @@ A full-stack healthcare data analytics platform built on **PostgreSQL**, **FastA
 
 ---
 
+## Screenshots
+
+**Overview — KPIs, monthly claim volume, chronic condition distribution**
+![Overview Dashboard](docs/screenshots/overview.png)
+
+**Claims — paginated table with filters (gender, condition, provider, state, date range)**
+![Claims Table](docs/screenshots/claims.png)
+
+**Reports — executive summary, condition breakdown, top providers, ML model performance**
+![Reports](docs/screenshots/reports.png)
+
+---
+
 ## What it does
 
 | Layer | Description |
